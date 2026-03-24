@@ -1,4 +1,5 @@
 package es.ulpgc.datos.model;
 
-public class NewItems {
-}
+import java.time.LocalDateTime;
+
+public record NewsItem(String title, String url, LocalDateTime capturedAt) {}
