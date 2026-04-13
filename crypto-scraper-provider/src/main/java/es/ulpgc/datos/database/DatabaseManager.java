@@ -48,7 +48,6 @@ public class DatabaseManager {
             for (NewsItem item : newsList) {
                 pstmt.setString(1, item.title());
                 pstmt.setString(2, item.url());
-                pstmt.setString(3, item.capturedAt().toString());
 
                 // executeUpdate devuelve 1 si insertó, 0 si fue ignorado por el UNIQUE
                 insertedCount += pstmt.executeUpdate();

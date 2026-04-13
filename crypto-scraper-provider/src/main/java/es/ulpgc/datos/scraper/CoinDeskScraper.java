@@ -5,7 +5,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import es.ulpgc.datos.model.NewsItem;
-import es.ulpgc.datos.database.DatabaseManager;
+import es.ulpgc.datos.publisher.ActiveMQPublisher;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -19,7 +19,9 @@ public class CoinDeskScraper {
 
     private static final String URL = "https://www.coindesk.com/";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
-    private static final DatabaseManager dbManager = new DatabaseManager(); // Instancia global
+
+    // Sustituimos DatabaseManager por nuestro nuevo publicador JMS
+    private static final ActiveMQPublisher publisher = new ActiveMQPublisher();
 
     public static void main(String[] args) {
         System.out.println("Iniciando el servicio de scraping de CoinDesk...");
@@ -37,7 +39,8 @@ public class CoinDeskScraper {
             Document doc = fetchDocument();
             List<NewsItem> newsList = extractNews(doc);
 
-            dbManager.insertNews(newsList);
+            // ¡Enviamos las noticias al broker en formato JSON en lugar de a SQLite!
+            publisher.publishNews(newsList);
 
         } catch (IOException e) {
             System.err.println("Error de conexión al realizar el scraping: " + e.getMessage());
@@ -57,7 +60,9 @@ public class CoinDeskScraper {
             String articleUrl = link.absUrl("href");
 
             if (isValidNewsLink(title, articleUrl)) {
-                newsList.add(new NewsItem(title, articleUrl, LocalDateTime.now()));
+                // Ahora solo pasamos el título y la URL.
+                // El constructor de NewsItem se encarga del 'ts' (UTC) y el 'ss'
+                newsList.add(new NewsItem(title, articleUrl));
             }
         }
         return newsList;
