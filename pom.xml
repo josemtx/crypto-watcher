@@ -11,6 +11,7 @@
     <modules>
         <module>crypto-api-provider</module>
         <module>crypto-scraper-provider</module>
+        <module>event-store-builder</module>
     </modules>
 
     <properties>
