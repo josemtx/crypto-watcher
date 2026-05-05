@@ -1,73 +1,67 @@
+// Archivo: ActiveMQPublisher.java
 package es.ulpgc.datos.publisher;
 
 import com.google.gson.Gson;
-import es.ulpgc.datos.model.NewsItem;
+import es.ulpgc.datos.config.ActiveMqConfig;
+import es.ulpgc.datos.event.CryptoNewsEvent;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import java.util.List;
 
-public class ActiveMQPublisher {
-
-    // El puerto por defecto donde ActiveMQ está escuchando
-    private static final String BROKER_URL = "tcp://localhost:61616";
-    // El nombre del canal según el tipo de evento
-    private static final String TOPIC_NAME = "CryptoNews";
+public class ActiveMQPublisher implements AutoCloseable {
 
     private final Gson gson;
+    private final Connection connection;
+    private final Session session;
+    private final MessageProducer producer;
 
     public ActiveMQPublisher() {
         this.gson = new Gson();
-    }
-
-    public void publishNews(List<NewsItem> newsList) {
-        if (newsList == null || newsList.isEmpty()) {
-            System.out.println("No hay noticias nuevas para publicar.");
-            return;
-        }
 
         try {
-            // 1. Establecer conexión con el broker
-            ConnectionFactory factory = new ActiveMQConnectionFactory(BROKER_URL);
-            Connection connection = factory.createConnection();
-            connection.start();
+            // 1. Establecemos la conexión una única vez al instanciar la clase
+            ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(ActiveMqConfig.BROKER_URL);
+            this.connection = factory.createConnection();
+            this.connection.start();
 
-            // 2. Crear una sesión (sin transacciones complejas)
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-            // 3. Crear o apuntar al Topic "CryptoNews"
-            Destination topic = session.createTopic(TOPIC_NAME);
-
-            // 4. Crear el productor de mensajes
-            MessageProducer producer = session.createProducer(topic);
-            // PERSISTENT indica que ActiveMQ debe guardar el mensaje en disco por si se apaga
-            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
-
-            // 5. Convertir a JSON y enviar
-            int sentCount = 0;
-            for (NewsItem item : newsList) {
-                String jsonEvent = gson.toJson(item); // Magia de Gson: Objeto -> JSON
-                TextMessage message = session.createTextMessage(jsonEvent);
-                producer.send(message);
-                sentCount++;
-            }
-
-            System.out.println("Éxito: Se han publicado " + sentCount + " eventos en el Topic '" + TOPIC_NAME + "'.");
-
-            // 6. Limpieza: cerrar la conexión
-            producer.close();
-            session.close();
-            connection.close();
+            // 2. Creamos sesión y productor persistente apuntando al Topic de la configuración
+            this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Destination topic = session.createTopic(ActiveMqConfig.TOPIC_NAME);
+            this.producer = session.createProducer(topic);
+            this.producer.setDeliveryMode(DeliveryMode.PERSISTENT);
 
         } catch (JMSException e) {
-            System.err.println("Error crítico al intentar publicar en ActiveMQ: " + e.getMessage());
+            throw new IllegalStateException("Error crítico al inicializar el publicador de ActiveMQ", e);
+        }
+    }
+
+    // Fíjate que ahora recibe un evento individual (CryptoNewsEvent) y no la lista de dominio (NewsArticle)
+    public void publish(CryptoNewsEvent event) {
+        try {
+            String jsonEvent = gson.toJson(event);
+            TextMessage message = session.createTextMessage(jsonEvent);
+            producer.send(message);
+            System.out.println("Evento publicado: " + jsonEvent);
+        } catch (JMSException e) {
+            System.err.println("Error publicando el evento de noticia: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            if (producer != null) producer.close();
+            if (session != null) session.close();
+            if (connection != null) connection.close();
+            System.out.println("Conexión con ActiveMQ cerrada limpiamente.");
+        } catch (JMSException e) {
+            System.err.println("Error cerrando los recursos de ActiveMQ: " + e.getMessage());
         }
     }
 }

@@ -1,6 +1,7 @@
-package es.ulpgc.datos.database;
+// Archivo: DatabaseNewsSerializer.java
+package es.ulpgc.datos.serializer;
 
-import es.ulpgc.datos.model.NewsItem;
+import es.ulpgc.datos.model.NewsArticle;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -9,12 +10,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
-public class DatabaseManager {
-
-    // La base de datos se creará en la raíz de tu proyecto
+public class DatabaseNewsSerializer implements NewsSerializer {
     private static final String DB_URL = "jdbc:sqlite:crypto_data.db";
 
-    public DatabaseManager() {
+    public DatabaseNewsSerializer() {
         createTableIfNotExists();
     }
 
@@ -36,8 +35,12 @@ public class DatabaseManager {
         }
     }
 
-    public void insertNews(List<NewsItem> newsList) {
-        // INSERT OR IGNORE evita que se dupliquen noticias si la URL ya existe
+    @Override
+    public void save(List<NewsArticle> newsList) {
+        if (newsList == null || newsList.isEmpty()) {
+            return;
+        }
+
         String sql = "INSERT OR IGNORE INTO news (title, url, captured_at) VALUES (?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
@@ -45,11 +48,11 @@ public class DatabaseManager {
 
             int insertedCount = 0;
 
-            for (NewsItem item : newsList) {
+            for (NewsArticle item : newsList) {
                 pstmt.setString(1, item.title());
                 pstmt.setString(2, item.url());
+                pstmt.setString(3, item.capturedAt().toString());
 
-                // executeUpdate devuelve 1 si insertó, 0 si fue ignorado por el UNIQUE
                 insertedCount += pstmt.executeUpdate();
             }
 
