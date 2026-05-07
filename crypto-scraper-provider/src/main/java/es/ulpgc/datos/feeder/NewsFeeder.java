@@ -1,4 +1,3 @@
-// Archivo: NewsFeeder.java
 package es.ulpgc.datos.feeder;
 
 import es.ulpgc.datos.model.NewsArticle;

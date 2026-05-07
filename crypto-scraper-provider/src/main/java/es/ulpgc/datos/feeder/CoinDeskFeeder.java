@@ -1,4 +1,3 @@
-// Archivo: CoinDeskFeeder.java
 package es.ulpgc.datos.feeder;
 
 import org.jsoup.Jsoup;
@@ -23,14 +22,14 @@ public class CoinDeskFeeder implements NewsFeeder {
             return extractNews(doc);
         } catch (IOException e) {
             System.err.println("Error de conexión al realizar el scraping: " + e.getMessage());
-            return List.of(); // Devolvemos lista vacía para que el programa no crashee
+            return List.of();
         }
     }
 
     private List<NewsArticle> extractNews(Document doc) {
         List<NewsArticle> newsList = new ArrayList<>();
         Elements newsLinks = doc.select("a:has(h2), a:has(h3), a:has(h4), a:has(h5), a:has(h6)");
-        Instant capturedAt = Instant.now(); // Capturamos el momento exacto para todas las noticias
+        Instant capturedAt = Instant.now();
 
         for (Element link : newsLinks) {
             String title = link.text();

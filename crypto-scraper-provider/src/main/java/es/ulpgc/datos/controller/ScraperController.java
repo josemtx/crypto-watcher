@@ -1,12 +1,13 @@
-// Archivo: ScraperController.java
 package es.ulpgc.datos.controller;
 
+import es.ulpgc.datos.analyzer.SentimentAnalyzer;
+import es.ulpgc.datos.analyzer.SentimentAnalyzer.SentimentResult;
 import es.ulpgc.datos.event.CryptoNewsEvent;
 import es.ulpgc.datos.feeder.NewsFeeder;
 import es.ulpgc.datos.mapper.NewsEventMapper;
 import es.ulpgc.datos.model.NewsArticle;
 import es.ulpgc.datos.publisher.ActiveMQPublisher;
-import es.ulpgc.datos.serializer.NewsSerializer;
+import es.ulpgc.datos.util.ArticleSanitizer;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,35 +17,46 @@ import java.util.concurrent.TimeUnit;
 
 public class ScraperController {
     private final NewsFeeder feeder;
-    private final NewsSerializer serializer;
+    private final ArticleSanitizer sanitizer;
+    private final SentimentAnalyzer analyzer;
     private final NewsEventMapper eventMapper;
     private final ActiveMQPublisher publisher;
     private final ScheduledExecutorService scheduler;
+    private final String sourceId;
 
-    public ScraperController(NewsFeeder feeder, NewsSerializer serializer, NewsEventMapper eventMapper, ActiveMQPublisher publisher) {
+    // Constructor actualizado con todas las inyecciones
+    public ScraperController(NewsFeeder feeder, ArticleSanitizer sanitizer, SentimentAnalyzer analyzer,
+                             NewsEventMapper eventMapper, ActiveMQPublisher publisher, String sourceId) {
         this.feeder = feeder;
-        this.serializer = serializer;
+        this.sanitizer = sanitizer;
+        this.analyzer = analyzer;
         this.eventMapper = eventMapper;
         this.publisher = publisher;
+        this.sourceId = sourceId;
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
     public void runOnce() {
         System.out.println("\n[" + LocalDateTime.now() + "] Ejecutando captura de noticias...");
-        List<NewsArticle> articles = feeder.fetchNews();
+        List<NewsArticle> rawArticles = feeder.fetchNews();
 
-        if (articles.isEmpty()) {
-            System.out.println("No se han capturado noticias en esta iteración.");
+        // 1. Limpiar basura
+        List<NewsArticle> cleanArticles = sanitizer.sanitize(rawArticles);
+
+        if (cleanArticles.isEmpty()) {
+            System.out.println("No hay noticias nuevas válidas en esta iteración.");
             return;
         }
 
-        // 1. Persistencia local
-        serializer.save(articles);
-
-        // 2. Publicación en la red
         int publishedCount = 0;
-        for (NewsArticle article : articles) {
-            CryptoNewsEvent event = eventMapper.toEvent(article);
+        for (NewsArticle article : cleanArticles) {
+            // 2. Analizar sentimiento del título
+            SentimentResult sentiment = analyzer.analyze(article.title());
+
+            // 3. Mapear con todos los datos
+            CryptoNewsEvent event = eventMapper.toEvent(article, sourceId, sentiment);
+
+            // 4. Publicar
             publisher.publish(event);
             publishedCount++;
         }
@@ -53,12 +65,11 @@ public class ScraperController {
     }
 
     public void startPeriodicCapture() {
-        runOnce(); // Ejecución inmediata la primera vez
+        runOnce();
         scheduler.scheduleAtFixedRate(this::runOnce, 1, 1, TimeUnit.HOURS);
     }
 
     public void stop() {
         scheduler.shutdown();
-        publisher.close(); // Cierre limpio de los recursos de red
     }
 }

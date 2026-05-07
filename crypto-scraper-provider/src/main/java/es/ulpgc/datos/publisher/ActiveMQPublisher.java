@@ -2,7 +2,6 @@
 package es.ulpgc.datos.publisher;
 
 import com.google.gson.Gson;
-import es.ulpgc.datos.config.ActiveMqConfig;
 import es.ulpgc.datos.event.CryptoNewsEvent;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
@@ -21,18 +20,17 @@ public class ActiveMQPublisher implements AutoCloseable {
     private final Session session;
     private final MessageProducer producer;
 
-    public ActiveMQPublisher() {
+    // Recibimos los parámetros de conexión directamente
+    public ActiveMQPublisher(String brokerUrl, String topicName) {
         this.gson = new Gson();
 
         try {
-            // 1. Establecemos la conexión una única vez al instanciar la clase
-            ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(ActiveMqConfig.BROKER_URL);
+            ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
             this.connection = factory.createConnection();
             this.connection.start();
 
-            // 2. Creamos sesión y productor persistente apuntando al Topic de la configuración
             this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Destination topic = session.createTopic(ActiveMqConfig.TOPIC_NAME);
+            Destination topic = session.createTopic(topicName);
             this.producer = session.createProducer(topic);
             this.producer.setDeliveryMode(DeliveryMode.PERSISTENT);
 
@@ -41,7 +39,6 @@ public class ActiveMQPublisher implements AutoCloseable {
         }
     }
 
-    // Fíjate que ahora recibe un evento individual (CryptoNewsEvent) y no la lista de dominio (NewsArticle)
     public void publish(CryptoNewsEvent event) {
         try {
             String jsonEvent = gson.toJson(event);

@@ -1,17 +1,19 @@
-// Archivo: NewsEventMapper.java
 package es.ulpgc.datos.mapper;
 
-import es.ulpgc.datos.config.ActiveMqConfig;
+import es.ulpgc.datos.analyzer.SentimentAnalyzer.SentimentResult;
 import es.ulpgc.datos.event.CryptoNewsEvent;
 import es.ulpgc.datos.model.NewsArticle;
 
 public class NewsEventMapper {
-    public CryptoNewsEvent toEvent(NewsArticle article) {
+
+    public CryptoNewsEvent toEvent(NewsArticle article, String sourceId, SentimentResult sentiment) {
         return new CryptoNewsEvent(
                 article.capturedAt().toString(),
-                ActiveMqConfig.SOURCE_ID,
+                sourceId,
                 article.title(),
-                article.url()
+                article.url(),
+                sentiment.score(),
+                sentiment.label()
         );
     }
 }
