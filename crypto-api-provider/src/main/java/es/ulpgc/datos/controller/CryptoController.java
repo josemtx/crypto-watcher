@@ -4,8 +4,7 @@ import es.ulpgc.datos.event.CryptoPriceEvent;
 import es.ulpgc.datos.feeder.CryptoFeeder;
 import es.ulpgc.datos.model.CryptoPrice;
 import es.ulpgc.datos.mapper.CryptoPriceEventMapper;
-import es.ulpgc.datos.publisher.ActiveMqEventPublisher;
-import es.ulpgc.datos.serializer.CryptoPriceSerializer;
+import es.ulpgc.datos.controller.serializer.CryptoPriceSerializer;
 
 import java.util.List;
 import java.util.concurrent.Executors;

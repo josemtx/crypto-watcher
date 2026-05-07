@@ -1,4 +1,4 @@
-package es.ulpgc.datos.serializer;
+package es.ulpgc.datos.controller.serializer;
 
 import es.ulpgc.datos.model.CryptoPrice;
 
