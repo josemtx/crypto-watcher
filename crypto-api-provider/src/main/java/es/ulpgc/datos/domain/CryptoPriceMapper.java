@@ -1,8 +1,7 @@
-package es.ulpgc.datos.mapper;
+package es.ulpgc.datos.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import es.ulpgc.datos.model.CryptoPrice;
 
 import java.io.IOException;
 import java.time.Instant;

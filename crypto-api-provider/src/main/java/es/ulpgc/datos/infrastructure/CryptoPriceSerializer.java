@@ -1,6 +1,6 @@
-package es.ulpgc.datos.serializer;
+package es.ulpgc.datos.infrastructure;
 
-import es.ulpgc.datos.model.CryptoPrice;
+import es.ulpgc.datos.domain.CryptoPrice;
 
 import java.util.List;
 

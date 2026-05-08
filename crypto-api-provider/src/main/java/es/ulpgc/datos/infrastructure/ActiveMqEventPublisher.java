@@ -1,16 +1,16 @@
-package es.ulpgc.datos.publisher;
+package es.ulpgc.datos.infrastructure;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import es.ulpgc.datos.config.ActiveMqConfig;
-import es.ulpgc.datos.event.CryptoPriceEvent;
+import es.ulpgc.datos.domain.CryptoPriceEvent;
+import org.apache.activemq.ActiveMQConnectionFactory;
+
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
-import org.apache.activemq.ActiveMQConnectionFactory;
 
 public class ActiveMqEventPublisher implements AutoCloseable {
     private final ObjectMapper objectMapper;
@@ -18,16 +18,16 @@ public class ActiveMqEventPublisher implements AutoCloseable {
     private final Session session;
     private final MessageProducer producer;
 
-    public ActiveMqEventPublisher() {
+    public ActiveMqEventPublisher(String brokerUrl, String topicName) {
         try {
             this.objectMapper = new ObjectMapper();
 
-            ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(ActiveMqConfig.BROKER_URL);
+            ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
             this.connection = factory.createConnection();
             this.connection.start();
 
             this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Topic topic = session.createTopic(ActiveMqConfig.TOPIC_NAME);
+            Topic topic = session.createTopic(topicName);
             this.producer = session.createProducer(topic);
         } catch (JMSException e) {
             throw new IllegalStateException("Error creating ActiveMQ publisher", e);

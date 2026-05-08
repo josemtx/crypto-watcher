@@ -1,8 +1,9 @@
-package es.ulpgc.datos.feeder;
+package es.ulpgc.datos.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import es.ulpgc.datos.mapper.CryptoPriceMapper;
-import es.ulpgc.datos.model.CryptoPrice;
+import es.ulpgc.datos.domain.CryptoFeeder;
+import es.ulpgc.datos.domain.CryptoPriceMapper;
+import es.ulpgc.datos.domain.CryptoPrice;
 
 import java.io.IOException;
 import java.net.URI;

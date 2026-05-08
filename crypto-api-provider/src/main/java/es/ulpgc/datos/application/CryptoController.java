@@ -1,11 +1,11 @@
-package es.ulpgc.datos.controller;
+package es.ulpgc.datos.application;
 
-import es.ulpgc.datos.event.CryptoPriceEvent;
-import es.ulpgc.datos.feeder.CryptoFeeder;
-import es.ulpgc.datos.model.CryptoPrice;
-import es.ulpgc.datos.mapper.CryptoPriceEventMapper;
-import es.ulpgc.datos.publisher.ActiveMqEventPublisher;
-import es.ulpgc.datos.serializer.CryptoPriceSerializer;
+import es.ulpgc.datos.domain.CryptoPriceEvent;
+import es.ulpgc.datos.domain.CryptoFeeder;
+import es.ulpgc.datos.domain.CryptoPrice;
+import es.ulpgc.datos.domain.CryptoPriceEventMapper;
+import es.ulpgc.datos.infrastructure.ActiveMqEventPublisher;
+import es.ulpgc.datos.infrastructure.CryptoPriceSerializer;
 
 import java.util.List;
 import java.util.concurrent.Executors;

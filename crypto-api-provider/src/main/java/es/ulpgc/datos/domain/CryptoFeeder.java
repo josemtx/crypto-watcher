@@ -1,6 +1,4 @@
-package es.ulpgc.datos.feeder;
-
-import es.ulpgc.datos.model.CryptoPrice;
+package es.ulpgc.datos.domain;
 
 import java.util.List;
 

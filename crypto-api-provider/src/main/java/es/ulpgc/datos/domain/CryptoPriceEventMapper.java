@@ -1,15 +1,16 @@
-package es.ulpgc.datos.mapper;
-
-import es.ulpgc.datos.event.CryptoPriceEvent;
-import es.ulpgc.datos.model.CryptoPrice;
+package es.ulpgc.datos.domain;
 
 public class CryptoPriceEventMapper {
-    private static final String SOURCE = "crypto-api-provider";
+    private final String sourceId;
+
+    public CryptoPriceEventMapper(String sourceId) {
+        this.sourceId = sourceId;
+    }
 
     public CryptoPriceEvent toEvent(CryptoPrice price) {
         return new CryptoPriceEvent(
                 price.capturedAt().toString(),
-                SOURCE,
+                sourceId,
                 price.coinId(),
                 price.symbol(),
                 price.name(),
