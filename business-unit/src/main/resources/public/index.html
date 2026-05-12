@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Intelligence</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #000000;
+            --card: #1C1C1E;
+            --card-elevated: #2C2C2E;
+            --border: rgba(255,255,255,0.07);
+            --border-strong: rgba(255,255,255,0.14);
+            --accent: #0A84FF;
+            --accent-glow: rgba(10,132,255,0.15);
+            --positive: #30D158;
+            --positive-bg: rgba(48,209,88,0.10);
+            --negative: #FF453A;
+            --negative-bg: rgba(255,69,58,0.10);
+            --neutral: #636366;
+            --text-primary: #F5F5F7;
+            --text-secondary: #8E8E93;
+            --text-tertiary: #48484A;
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 22px;
+            --radius-xl: 28px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Syne', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+            width: 800px; height: 400px; background: radial-gradient(ellipse at center, rgba(10,132,255,0.08) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        .shell { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 48px 32px 64px; }
+
+        /* ─── Header ─── */
+        .header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 40px; padding-bottom: 32px; border-bottom: 0.5px solid var(--border); }
+        .eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+        .header h1 { font-size: 38px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; color: var(--text-primary); }
+        .header h1 span { color: var(--text-secondary); font-weight: 400; }
+        .header-right { display: flex; align-items: center; gap: 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-secondary); }
+
+        /* ─── Selector Dinámico ─── */
+        .coin-select {
+            background: var(--card-elevated); color: var(--text-primary); border: 0.5px solid var(--border-strong);
+            padding: 8px 16px; border-radius: var(--radius-sm); font-family: 'DM Mono', monospace; font-size: 13px;
+            outline: none; cursor: pointer; text-transform: uppercase;
+        }
+        .coin-select:hover { border-color: var(--accent); }
+
+        .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--positive); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* ─── Alert Banner ─── */
+        #hypeAlert {
+            display: none; background: rgba(255,69,58,0.06); border: 0.5px solid rgba(255,69,58,0.25);
+            border-radius: var(--radius-md); padding: 14px 20px; margin-bottom: 24px; font-family: 'DM Mono', monospace;
+            font-size: 12px; letter-spacing: 0.04em; color: var(--negative); align-items: center; gap: 10px;
+        }
+        #hypeAlert .alert-icon { font-size: 16px; flex-shrink: 0; }
+        #hypeAlert strong { font-weight: 500; }
+
+        /* ─── Main grid ─── */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 380px; grid-template-rows: auto auto; gap: 16px; }
+
+        /* ─── Cards ─── */
+        .card { background: var(--card); border-radius: var(--radius-xl); border: 0.5px solid var(--border); padding: 28px; position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, transparent 60%); pointer-events: none; }
+
+        /* ─── Price card ─── */
+        .price-card { grid-row: 1 / 3; }
+        .price-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .coin-label { display: flex; align-items: center; gap: 10px; }
+        .coin-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-glow); border: 0.5px solid rgba(10,132,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .coin-name { font-size: 14px; font-weight: 600; color: var(--text-primary); text-transform: capitalize; }
+        .coin-ticker { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-secondary); letter-spacing: 0.08em; text-transform: uppercase; }
+
+        .time-tabs { display: flex; gap: 4px; background: var(--card-elevated); border-radius: var(--radius-sm); padding: 3px; }
+        .time-tab { font-family: 'DM Mono', monospace; font-size: 11px; padding: 5px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em; }
+        .time-tab.active { background: var(--card); color: var(--text-primary); border: 0.5px solid var(--border-strong); }
+
+        .price-display { margin-bottom: 6px; }
+        .price-value { font-size: 52px; font-weight: 800; letter-spacing: -2.5px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+        .price-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; padding: 5px 10px; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; }
+        .price-badge.positive { background: var(--positive-bg); color: var(--positive); }
+        .price-badge.negative { background: var(--negative-bg); color: var(--negative); }
+
+        .chart-wrap { margin-top: 28px; position: relative; height: 280px; }
+
+        /* ─── Stats row ─── */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 24px; padding-top: 24px; border-top: 0.5px solid var(--border); }
+        .stat-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; }
+        .stat-value { font-size: 15px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+        /* ─── News card ─── */
+        .news-card { display: flex; flex-direction: column; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .card-title { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+        .card-count { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-tertiary); }
+        .news-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; max-height: 480px; scrollbar-width: thin; scrollbar-color: var(--card-elevated) transparent; }
+        .news-list::-webkit-scrollbar { width: 3px; }
+        .news-list::-webkit-scrollbar-thumb { background: var(--card-elevated); border-radius: 2px; }
+
+        .news-item { display: block; padding: 14px 16px; border-radius: var(--radius-md); text-decoration: none; color: var(--text-primary); transition: background 0.15s; position: relative; }
+        .news-item:hover { background: var(--card-elevated); }
+        .news-item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .sentiment-pill { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em; padding: 3px 7px; border-radius: 4px; font-weight: 500; }
+        .s-MUY_POSITIVO, .s-POSITIVO { background: var(--positive-bg); color: var(--positive); }
+        .s-MUY_NEGATIVO, .s-NEGATIVO { background: var(--negative-bg); color: var(--negative); }
+        .s-NEUTRAL { background: rgba(142,142,147,0.1); color: var(--neutral); }
+        .news-time-tag { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-tertiary); }
+        .news-title { font-size: 13px; font-weight: 500; line-height: 1.45; color: var(--text-secondary); transition: color 0.15s; }
+        .news-item:hover .news-title { color: var(--text-primary); }
+
+        /* ─── Sentiment card ─── */
+        .sentiment-bar-wrap { margin-top: 16px; }
+        .sentiment-bar-labels { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-tertiary); margin-bottom: 8px; }
+        .sentiment-bar-track { height: 6px; border-radius: 3px; background: var(--card-elevated); overflow: hidden; }
+        .sentiment-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--negative) 0%, var(--neutral) 50%, var(--positive) 100%); width: 0%; transition: width 0.6s ease; }
+        .sentiment-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+        .sbd-item { background: var(--card-elevated); border-radius: var(--radius-sm); padding: 10px 12px; }
+        .sbd-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; }
+        .sbd-count { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+        .sbd-count.pos { color: var(--positive); }
+        .sbd-count.neu { color: var(--text-secondary); }
+        .sbd-count.neg { color: var(--negative); }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+            .price-card { grid-row: auto; }
+            .shell { padding: 28px 20px 48px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 16px; }
+            .price-value { font-size: 40px; }
+        }
+        .card { animation: fadeUp 0.5s ease both; }
+        .price-card { animation-delay: 0.05s; }
+        .news-card { animation-delay: 0.15s; }
+        .sentiment-card { animation-delay: 0.25s; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+<div class="shell">
+
+    <header class="header">
+        <div class="header-left">
+            <div class="eyebrow">Market Intelligence</div>
+            <h1 id="mainTitle">Crypto <span>Dashboard</span></h1>
+        </div>
+        <div class="header-right">
+            <select id="coinSelector" class="coin-select" onchange="loadDashboard()"></select>
+            <div class="live-dot"></div>
+            Live
+        </div>
+    </header>
+
+    <div id="hypeAlert">
+        <span class="alert-icon">⚠</span>
+        <div><strong>Alerta de mercado:</strong> Pánico/Euforia detectada. Alta volatilidad con volumen masivo de noticias.</div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div class="card price-card">
+            <div class="price-meta">
+                <div class="coin-label">
+                    <div class="coin-icon" id="coinIcon">¤</div>
+                    <div>
+                        <div class="coin-name" id="coinName">Cargando...</div>
+                        <div class="coin-ticker" id="coinTicker">-- / USD</div>
+                    </div>
+                </div>
+                <div class="time-tabs">
+                    <button class="time-tab active">24H</button>
+                </div>
+            </div>
+
+            <div class="price-display">
+                <div class="price-value" id="currentPrice">—</div>
+                <div id="priceBadge" class="price-badge positive">...</div>
+            </div>
+
+            <div class="chart-wrap">
+                <canvas id="cryptoChart"></canvas>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-label">Apertura 24H</div>
+                    <div class="stat-value" id="statOpen">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Máx. 24H</div>
+                    <div class="stat-value" id="statHigh">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Mín. 24H</div>
+                    <div class="stat-value" id="statLow">—</div>
+                </div>
+            </div>
+
+            <div class="stats-row" style="margin-top: 16px; padding-top: 16px;">
+                <div class="stat-item">
+                    <div class="stat-label">Riesgo (Hora)</div>
+                    <div class="stat-value" id="valRiskHour">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Ballenas Ocultas</div>
+                    <div class="stat-value" id="valWhales">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Termómetro</div>
+                    <div class="stat-value" id="valThermometer">—</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card news-card">
+            <div class="card-header">
+                <div class="card-title">Market Feed</div>
+                <div class="card-count" id="newsCount">—</div>
+            </div>
+            <div class="news-list" id="newsFeed">
+                <div style="color:var(--text-tertiary); font-size:13px; padding:16px 0;">Cargando noticias…</div>
+            </div>
+        </div>
+
+        <div class="card sentiment-card">
+            <div class="card-header">
+                <div class="card-title">Sentimiento Global</div>
+            </div>
+            <div class="sentiment-bar-wrap">
+                <div class="sentiment-bar-labels">
+                    <span>Bearish</span>
+                    <span>Bullish</span>
+                </div>
+                <div class="sentiment-bar-track">
+                    <div class="sentiment-bar-fill" id="sentimentBar"></div>
+                </div>
+            </div>
+            <div class="sentiment-breakdown">
+                <div class="sbd-item"><div class="sbd-label">Positivo</div><div class="sbd-count pos" id="countPos">—</div></div>
+                <div class="sbd-item"><div class="sbd-label">Neutral</div><div class="sbd-count neu" id="countNeu">—</div></div>
+                <div class="sbd-item"><div class="sbd-label">Negativo</div><div class="sbd-count neg" id="countNeg">—</div></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let chartInstance = null;
+    const icons = { 'ethereum': '⟠', 'bitcoin': '₿' }; // Diccionario de iconos
+
+    // 1. Cargar las criptomonedas disponibles en la base de datos
+    async function loadCoins() {
+        try {
+            const res = await fetch('/api/coins');
+            const coins = await res.json();
+            const selector = document.getElementById('coinSelector');
+            selector.innerHTML = '';
+
+            coins.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.coin_id;
+                option.textContent = c.coin_id;
+                selector.appendChild(option);
+            });
+
+            if(coins.length > 0) loadDashboard();
+        } catch (e) {
+            console.error("Fallo conectando a la API de monedas", e);
+        }
+    }
+
+    // 2. Cargar el Dashboard basado en la moneda seleccionada
+    async function loadDashboard() {
+        const selectedCoin = document.getElementById('coinSelector').value;
+        if(!selectedCoin) return;
+
+        // Actualizar UI Textos
+        const nameCapitalized = selectedCoin.charAt(0).toUpperCase() + selectedCoin.slice(1);
+        document.getElementById('mainTitle').innerHTML = `${nameCapitalized} <span>Dashboard</span>`;
+        document.getElementById('coinName').textContent = nameCapitalized;
+        document.getElementById('coinTicker').textContent = `${selectedCoin} / USD`;
+        document.getElementById('coinIcon').textContent = icons[selectedCoin.toLowerCase()] || '¤';
+
+        try {
+            const [timelineRes, alertsRes, newsRes, summaryRes] = await Promise.all([
+                fetch(`/api/timeline?coin=${selectedCoin}`),
+                fetch(`/api/alerts?coin=${selectedCoin}`),
+                fetch('/api/news'),
+                fetch(`/api/summary?coin=${selectedCoin}`)
+            ]);
+
+            const timelineData = await timelineRes.json();
+            const alertsData = await alertsRes.json();
+            const newsData = await newsRes.json();
+            const summaryData = await summaryRes.json();
+
+            // ─── Inteligencia de Negocio (Nuevos campos) ───
+            document.getElementById('valThermometer').textContent = summaryData.market_thermometer;
+            document.getElementById('valRiskHour').textContent = summaryData.highest_risk_hour !== "N/A" ? summaryData.highest_risk_hour.split('T')[1] : "--";
+
+            const whales = document.getElementById('valWhales');
+            whales.textContent = summaryData.silent_whales_detected > 0 ? summaryData.silent_whales_detected : "0";
+            whales.style.color = summaryData.silent_whales_detected > 0 ? "var(--accent)" : "var(--text-primary)";
+
+            // ─── Precio y gráfica ───
+            if(timelineData.length > 0) {
+                const reversed = [...timelineData].reverse();
+                const labels = reversed.map(d => d.time_window.split('T')[1].substring(0, 5));
+                const prices = reversed.map(d => d.close_price);
+                const lastPrice = prices[prices.length - 1];
+
+                document.getElementById('currentPrice').textContent = '$' + lastPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                const firstPrice = prices[0];
+                const changePct = ((lastPrice - firstPrice) / firstPrice) * 100;
+                const badge = document.getElementById('priceBadge');
+                badge.textContent = (changePct >= 0 ? '↑ +' : '↓ ') + changePct.toFixed(2) + '%';
+                badge.className = 'price-badge ' + (changePct >= 0 ? 'positive' : 'negative');
+
+                const maxP = Math.max(...prices);
+                const minP = Math.min(...prices);
+                document.getElementById('statOpen').textContent = '$' + firstPrice.toLocaleString('en-US', { minimumFractionDigits: 2 });
+                document.getElementById('statHigh').textContent = '$' + maxP.toLocaleString('en-US', { minimumFractionDigits: 2 });
+                document.getElementById('statLow').textContent = '$' + minP.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+                const ctx = document.getElementById('cryptoChart').getContext('2d');
+                const isPositive = changePct >= 0;
+                const lineColor = isPositive ? '#30D158' : '#FF453A';
+                const areaColor = isPositive ? 'rgba(48,209,88,0.08)' : 'rgba(255,69,58,0.08)';
+
+                if (chartInstance) chartInstance.destroy();
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels, datasets: [{ data: prices, borderColor: lineColor, backgroundColor: areaColor, borderWidth: 2, pointRadius: 0, fill: true, tension: 0.4 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { backgroundColor: '#2C2C2E', titleColor: '#8E8E93', bodyColor: '#F5F5F7', borderColor: 'rgba(255,255,255,0.07)', borderWidth: 1, padding: 10, callbacks: { label: ctx => '$' + ctx.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2 }) } } },
+                        scales: { x: { grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false }, ticks: { color: '#48484A', font: { family: 'DM Mono', size: 10 }, maxTicksLimit: 6 } }, y: { position: 'right', grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false }, ticks: { color: '#48484A', font: { family: 'DM Mono', size: 10 }, callback: v => '$' + v.toLocaleString() } } }
+                    }
+                });
+            }
+
+            // ─── Alerta hype ───
+            document.getElementById('hypeAlert').style.display = (alertsData.length > 0 && alertsData[0].hype_warning === 1) ? 'flex' : 'none';
+
+            // ─── Noticias y Barra de Sentimiento ───
+            const feed = document.getElementById('newsFeed');
+            feed.innerHTML = '';
+            document.getElementById('newsCount').textContent = newsData.length + ' artículos';
+
+            let pos = 0, neu = 0, neg = 0;
+            newsData.forEach(news => {
+                const label = news.sentiment_label.trim();
+                const cls = label.replace(/\s+/g, '_');
+
+                if (['POSITIVO','MUY_POSITIVO'].includes(cls)) pos++;
+                else if (['NEGATIVO','MUY_NEGATIVO'].includes(cls)) neg++;
+                else neu++;
+
+                const a = document.createElement('a');
+                a.href = news.url; a.target = '_blank'; a.className = 'news-item';
+                const time = news.published_at.replace('T',' ').substring(0,16);
+                a.innerHTML = `<div class="news-item-top"><span class="sentiment-pill s-${cls}">${label}</span><span class="news-time-tag">${time}</span></div><div class="news-title">${news.title}</div>`;
+                feed.appendChild(a);
+            });
+
+            const total = pos + neu + neg || 1;
+            document.getElementById('countPos').textContent = pos;
+            document.getElementById('countNeu').textContent = neu;
+            document.getElementById('countNeg').textContent = neg;
+            const bullishPct = Math.round((pos / total) * 100);
+            document.getElementById('sentimentBar').style.width = bullishPct + '%';
+
+        } catch (err) {
+            console.error('Dashboard error:', err);
+        }
+    }
+
+    // Inicializamos cargando las monedas y configuramos el autorefresco
+    loadCoins();
+    setInterval(loadDashboard, 60000);
+</script>
+</body>
+</html>
