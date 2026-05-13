@@ -10,9 +10,11 @@ import java.util.List;
 
 public class CryptoPriceMapper {
     private final ObjectMapper objectMapper;
+    private final String vsCurrency;
 
-    public CryptoPriceMapper(ObjectMapper objectMapper) {
+    public CryptoPriceMapper(ObjectMapper objectMapper, String vsCurrency) {
         this.objectMapper = objectMapper;
+        this.vsCurrency = vsCurrency;
     }
 
     public List<CryptoPrice> fromJson(String responseBody, Instant capturedAt) throws IOException {
@@ -24,6 +26,7 @@ public class CryptoPriceMapper {
                     coinNode.get("id").asText(),
                     coinNode.get("symbol").asText(),
                     coinNode.get("name").asText(),
+                    vsCurrency,
                     coinNode.get("current_price").asDouble(),
                     getNullableDouble(coinNode, "market_cap"),
                     getNullableDouble(coinNode, "total_volume"),

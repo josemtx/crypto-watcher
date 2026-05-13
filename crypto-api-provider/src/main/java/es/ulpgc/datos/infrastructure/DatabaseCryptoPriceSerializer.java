@@ -11,9 +11,16 @@ import java.sql.Types;
 import java.util.List;
 
 public class DatabaseCryptoPriceSerializer implements CryptoPriceSerializer {
-    private static final String DB_URL = "jdbc:sqlite:crypto_data.db";
+    private static final String DEFAULT_DB_URL = "jdbc:sqlite:crypto_data.db";
+
+    private final String dbUrl;
 
     public DatabaseCryptoPriceSerializer() {
+        this(DEFAULT_DB_URL);
+    }
+
+    public DatabaseCryptoPriceSerializer(String dbUrl) {
+        this.dbUrl = normalizeDbUrl(dbUrl);
         createTableIfNotExists();
     }
 
@@ -25,7 +32,7 @@ public class DatabaseCryptoPriceSerializer implements CryptoPriceSerializer {
 
         String sql = """
                 INSERT INTO crypto_prices (
-                    coin_id, symbol, name, price_usd, market_cap, volume_24h, captured_at
+                    coin_id, symbol, name, price, market_cap, volume_24h, captured_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
@@ -36,7 +43,7 @@ public class DatabaseCryptoPriceSerializer implements CryptoPriceSerializer {
                 statement.setString(1, price.coinId());
                 statement.setString(2, price.symbol());
                 statement.setString(3, price.name());
-                statement.setDouble(4, price.priceUsd());
+                statement.setDouble(4, price.price());
                 setNullableDouble(statement, 5, price.marketCap());
                 setNullableDouble(statement, 6, price.volume24h());
                 statement.setString(7, price.capturedAt().toString());
@@ -48,7 +55,7 @@ public class DatabaseCryptoPriceSerializer implements CryptoPriceSerializer {
     }
 
     private Connection connect() throws SQLException {
-        return DriverManager.getConnection(DB_URL);
+        return DriverManager.getConnection(dbUrl);
     }
 
     private void createTableIfNotExists() {
@@ -58,7 +65,7 @@ public class DatabaseCryptoPriceSerializer implements CryptoPriceSerializer {
                     coin_id TEXT NOT NULL,
                     symbol TEXT NOT NULL,
                     name TEXT NOT NULL,
-                    price_usd REAL NOT NULL,
+                    price REAL NOT NULL,
                     market_cap REAL,
                     volume_24h REAL,
                     captured_at TEXT NOT NULL
@@ -79,5 +86,18 @@ public class DatabaseCryptoPriceSerializer implements CryptoPriceSerializer {
         } else {
             statement.setNull(parameterIndex, Types.REAL);
         }
+    }
+
+    private String normalizeDbUrl(String dbUrl) {
+        if (dbUrl == null || dbUrl.isBlank()) {
+            return DEFAULT_DB_URL;
+        }
+
+        String trimmed = dbUrl.trim();
+        if (trimmed.startsWith("jdbc:sqlite:")) {
+            return trimmed;
+        }
+
+        return "jdbc:sqlite:" + trimmed;
     }
 }
