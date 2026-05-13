@@ -24,7 +24,7 @@ public class DatamartUpdater implements EventProcessor {
             String timeWindow = ts.substring(0, 13) + ":00";
 
             try (Connection conn = DriverManager.getConnection(dbUrl)) {
-                if (event.has("priceUsd")) {
+                if (event.has("price")) {
                     processPriceEvent(conn, event, timeWindow);
                 } else if (event.has("sentimentLabel")) {
                     processNewsEvent(conn, event, timeWindow);
@@ -37,9 +37,8 @@ public class DatamartUpdater implements EventProcessor {
 
     private void processPriceEvent(Connection conn, JsonObject event, String timeWindow) throws Exception {
         String coinId = event.get("coinId").getAsString();
-        double price = event.get("priceUsd").getAsDouble();
+        double price = event.get("price").getAsDouble();
 
-        // 1. Actualizamos el Timeline de precios
         String sqlTimeline = """
             INSERT INTO crypto_timeline (time_window, coin_id, close_price, min_price, max_price)
             VALUES (?, ?, ?, ?, ?)
@@ -49,7 +48,6 @@ public class DatamartUpdater implements EventProcessor {
                 max_price = MAX(crypto_timeline.max_price, excluded.max_price);
         """;
 
-        // 2. CORRECCIÓN SQL: Usamos una subconsulta para leer el max_price y min_price de la tabla crypto_timeline
         String sqlAlerts = """
             INSERT INTO market_hype_alerts (time_window, coin_id, is_high_volatility, hype_warning)
             VALUES (?, ?, 0, 0)
@@ -85,7 +83,6 @@ public class DatamartUpdater implements EventProcessor {
         double score = event.get("sentimentScore").getAsDouble();
         String semanticLabel = getSemanticLabel(score);
 
-        // 1. Insertar la noticia coloreada en el feed
         String sqlNews = "INSERT INTO news_feed (published_at, title, url, sentiment_label) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlNews)) {
             stmt.setString(1, event.get("ts").getAsString());
@@ -95,7 +92,6 @@ public class DatamartUpdater implements EventProcessor {
             stmt.executeUpdate();
         }
 
-        // 2. CORRECCIÓN LÓGICA: Vinculamos las noticias al coin_id 'ethereum' para que cruce con los precios
         String sqlHype = """
             INSERT INTO market_hype_alerts (time_window, coin_id, news_volume, average_sentiment_score)
             VALUES (?, 'ethereum', 1, ?)
