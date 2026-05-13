@@ -1,12 +1,12 @@
 package es.ulpgc.datos;
 
 import es.ulpgc.datos.application.CryptoController;
-import es.ulpgc.datos.domain.CryptoFeeder;
+import es.ulpgc.datos.application.CryptoFeeder;
+import es.ulpgc.datos.application.CryptoPriceStore;
 import es.ulpgc.datos.domain.CryptoPriceEventMapper;
 import es.ulpgc.datos.infrastructure.ActiveMqEventPublisher;
 import es.ulpgc.datos.infrastructure.CoinGeckoFeeder;
-import es.ulpgc.datos.infrastructure.CryptoPriceSerializer;
-import es.ulpgc.datos.infrastructure.DatabaseCryptoPriceSerializer;
+import es.ulpgc.datos.infrastructure.DatabaseCryptoPriceStore;
 
 import java.util.concurrent.TimeUnit;
 
@@ -42,13 +42,13 @@ public class Main {
         );
 
         CryptoFeeder feeder = new CoinGeckoFeeder(vsCurrency, coinIds);
-        CryptoPriceSerializer serializer = new DatabaseCryptoPriceSerializer(databasePath);
+        CryptoPriceStore store = new DatabaseCryptoPriceStore(databasePath);
         CryptoPriceEventMapper eventMapper = new CryptoPriceEventMapper(sourceId);
         ActiveMqEventPublisher publisher = new ActiveMqEventPublisher(brokerUrl, topicName);
 
         CryptoController controller = new CryptoController(
                 feeder,
-                serializer,
+                store,
                 eventMapper,
                 publisher,
                 capturePeriod,

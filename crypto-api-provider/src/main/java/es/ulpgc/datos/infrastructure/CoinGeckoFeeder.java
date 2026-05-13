@@ -1,7 +1,7 @@
 package es.ulpgc.datos.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import es.ulpgc.datos.domain.CryptoFeeder;
+import es.ulpgc.datos.application.CryptoFeeder;
 import es.ulpgc.datos.domain.CryptoPrice;
 import es.ulpgc.datos.domain.CryptoPriceMapper;
 

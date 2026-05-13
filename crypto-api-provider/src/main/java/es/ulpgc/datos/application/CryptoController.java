@@ -1,11 +1,9 @@
 package es.ulpgc.datos.application;
 
-import es.ulpgc.datos.domain.CryptoFeeder;
 import es.ulpgc.datos.domain.CryptoPrice;
 import es.ulpgc.datos.domain.CryptoPriceEvent;
 import es.ulpgc.datos.domain.CryptoPriceEventMapper;
 import es.ulpgc.datos.infrastructure.ActiveMqEventPublisher;
-import es.ulpgc.datos.infrastructure.CryptoPriceSerializer;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -14,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CryptoController {
     private final CryptoFeeder feeder;
-    private final CryptoPriceSerializer serializer;
+    private final CryptoPriceStore store;
     private final CryptoPriceEventMapper eventMapper;
     private final ActiveMqEventPublisher publisher;
     private final ScheduledExecutorService scheduler;
@@ -22,13 +20,13 @@ public class CryptoController {
     private final TimeUnit captureTimeUnit;
 
     public CryptoController(CryptoFeeder feeder,
-                            CryptoPriceSerializer serializer,
+                            CryptoPriceStore store,
                             CryptoPriceEventMapper eventMapper,
                             ActiveMqEventPublisher publisher,
                             long capturePeriod,
                             TimeUnit captureTimeUnit) {
         this.feeder = feeder;
-        this.serializer = serializer;
+        this.store = store;
         this.eventMapper = eventMapper;
         this.publisher = publisher;
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -45,7 +43,7 @@ public class CryptoController {
         }
 
         System.out.println("Fetched " + prices.size() + " crypto prices.");
-        serializer.save(prices);
+        store.save(prices);
         System.out.println("Saved " + prices.size() + " crypto prices to SQLite.");
 
         int publishedEvents = 0;

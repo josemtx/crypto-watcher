@@ -1,5 +1,6 @@
 package es.ulpgc.datos.infrastructure;
 
+import es.ulpgc.datos.application.CryptoPriceStore;
 import es.ulpgc.datos.domain.CryptoPrice;
 
 import java.sql.Connection;
@@ -10,16 +11,16 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.List;
 
-public class DatabaseCryptoPriceSerializer implements CryptoPriceSerializer {
+public class DatabaseCryptoPriceStore implements CryptoPriceStore {
     private static final String DEFAULT_DB_URL = "jdbc:sqlite:crypto_data.db";
 
     private final String dbUrl;
 
-    public DatabaseCryptoPriceSerializer() {
+    public DatabaseCryptoPriceStore() {
         this(DEFAULT_DB_URL);
     }
 
-    public DatabaseCryptoPriceSerializer(String dbUrl) {
+    public DatabaseCryptoPriceStore(String dbUrl) {
         this.dbUrl = normalizeDbUrl(dbUrl);
         createTableIfNotExists();
     }

@@ -1,4 +1,6 @@
-package es.ulpgc.datos.domain;
+package es.ulpgc.datos.application;
+
+import es.ulpgc.datos.domain.CryptoPrice;
 
 import java.util.List;
 
