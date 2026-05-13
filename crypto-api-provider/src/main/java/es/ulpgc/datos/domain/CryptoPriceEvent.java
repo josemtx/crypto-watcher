@@ -6,7 +6,8 @@ public record CryptoPriceEvent(
         String coinId,
         String symbol,
         String name,
-        double priceUsd,
+        String vsCurrency,
+        double price,
         Double marketCap,
         Double volume24h
 ) {

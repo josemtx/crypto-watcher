@@ -14,7 +14,8 @@ public class CryptoPriceEventMapper {
                 price.coinId(),
                 price.symbol(),
                 price.name(),
-                price.priceUsd(),
+                price.vsCurrency(),
+                price.price(),
                 price.marketCap(),
                 price.volume24h()
         );
