@@ -7,8 +7,10 @@ import es.ulpgc.datos.datamart.EventStoreReader;
 import es.ulpgc.datos.subscriber.ActiveMQSubscriber;
 
 public class Main {
+    private static final int DEFAULT_API_PORT = 8080;
+    private static final String SUBSCRIBER_ID = "BusinessUnitApp";
+
     public static void main(String[] args) {
-        // Añadimos un tercer parámetro: la ruta a la carpeta 'eventstore'
         if (args.length < 3) {
             System.err.println("Uso: java -jar business-unit.jar <broker_url> <sqlite_db_path> <eventstore_path>");
             System.err.println("Ejemplo: tcp://localhost:61616 datamart.db ./eventstore");
@@ -17,44 +19,41 @@ public class Main {
 
         String brokerUrl = args[0];
         String dbPath = args[1];
-        String eventStorePath = args[2]; // Capturamos la ruta
+        String eventStorePath = args[2];
 
         System.out.println("Iniciando Business Unit...");
+        System.out.println("  Broker URL     : " + brokerUrl);
+        System.out.println("  SQLite DB Path : " + dbPath);
+        System.out.println("  Event Store    : " + eventStorePath);
+        System.out.println("  API Port       : " + DEFAULT_API_PORT);
 
-        // 1. Preparar la Base de Datos (Tablas vacías)
-        DatamartInitializer dbInitializer = new DatamartInitializer(dbPath);
-        dbInitializer.initialize();
+        DatamartInitializer datamartInitializer = new DatamartInitializer(dbPath);
+        datamartInitializer.initialize();
 
-        // Creamos el procesador que usaremos tanto para el pasado como para el futuro
-        DatamartUpdater updater = new DatamartUpdater(dbPath);
+        DatamartUpdater datamartUpdater = new DatamartUpdater(dbPath);
 
-        // 2. VIAJE AL PASADO: Leer y procesar archivos históricos antes de conectarnos a la red
         EventStoreReader historyReader = new EventStoreReader(eventStorePath);
-        historyReader.restoreDatamart(updater);
+        historyReader.restoreDatamart(datamartUpdater);
 
-        // 3. EL PRESENTE: Conectar a ActiveMQ para recibir lo nuevo
         try {
-            ActiveMQSubscriber subscriber = new ActiveMQSubscriber(brokerUrl, "BusinessUnitApp");
+            ActiveMQSubscriber subscriber = new ActiveMQSubscriber(brokerUrl, SUBSCRIBER_ID);
+            subscriber.startListening(datamartUpdater);
 
-            subscriber.startListening(updater);
-
-            // 4. Iniciar el servidor API REST para el Dashboard
             DatamartApiController apiController = new DatamartApiController(dbPath);
-            apiController.start(8080); // Levantamos el servidor en el puerto 8080
+            apiController.start(DEFAULT_API_PORT);
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println("Cerrando Business Unit...");
-                try { subscriber.close(); } catch (Exception ignored) {}
-                apiController.stop(); // Apagamos la API de forma segura
-            }));
-
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("Cerrando Business Unit...");
-                try { subscriber.close(); } catch (Exception ignored) {}
+                try {
+                    subscriber.close();
+                } catch (Exception ignored) {
+                }
+                apiController.stop();
             }));
 
         } catch (Exception e) {
-            System.err.println("Error crítico arrancando el suscriptor: " + e.getMessage());
+            System.err.println("Error crítico arrancando la Business Unit: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

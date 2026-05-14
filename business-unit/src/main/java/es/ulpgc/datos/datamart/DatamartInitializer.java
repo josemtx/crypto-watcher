@@ -15,7 +15,6 @@ public class DatamartInitializer {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              Statement stmt = conn.createStatement()) {
 
-            // Tabla 1: Timeline de Precios y Volatilidad
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS crypto_timeline (
                     time_window TEXT,
@@ -27,7 +26,6 @@ public class DatamartInitializer {
                 );
             """);
 
-            // Tabla 2: Feed de Noticias para la UI
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS news_feed (
                     news_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +36,6 @@ public class DatamartInitializer {
                 );
             """);
 
-            // Tabla 3: Alertas de Hype (El cruce de datos)
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS market_hype_alerts (
                     time_window TEXT,
@@ -46,6 +43,17 @@ public class DatamartInitializer {
                     news_volume INTEGER DEFAULT 0,
                     average_sentiment_score REAL DEFAULT 0.0,
                     is_high_volatility BOOLEAN DEFAULT 0,
+                    hype_warning BOOLEAN DEFAULT 0,
+                    PRIMARY KEY (time_window, coin_id)
+                );
+            """);
+
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS market_signal (
+                    time_window TEXT,
+                    coin_id TEXT,
+                    volatility_ratio REAL DEFAULT 0.0,
+                    signal TEXT NOT NULL,
                     hype_warning BOOLEAN DEFAULT 0,
                     PRIMARY KEY (time_window, coin_id)
                 );

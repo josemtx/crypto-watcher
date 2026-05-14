@@ -7,8 +7,13 @@ import es.ulpgc.datos.subscriber.EventProcessor;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class DatamartUpdater implements EventProcessor {
+    private static final double HIGH_VOLATILITY_THRESHOLD = 0.02;
+    private static final int HYPE_NEWS_THRESHOLD = 5;
+    private static final String GLOBAL_CONTEXT_ID = "__global__";
+
     private final String dbUrl;
 
     public DatamartUpdater(String dbPath) {
@@ -48,20 +53,6 @@ public class DatamartUpdater implements EventProcessor {
                 max_price = MAX(crypto_timeline.max_price, excluded.max_price);
         """;
 
-        String sqlAlerts = """
-            INSERT INTO market_hype_alerts (time_window, coin_id, is_high_volatility, hype_warning)
-            VALUES (?, ?, 0, 0)
-            ON CONFLICT(time_window, coin_id) DO UPDATE SET
-                is_high_volatility = (
-                    SELECT CASE WHEN ((max_price - min_price) / min_price) > 0.02 THEN 1 ELSE 0 END
-                    FROM crypto_timeline WHERE time_window = excluded.time_window AND coin_id = excluded.coin_id
-                ),
-                hype_warning = (
-                    SELECT CASE WHEN market_hype_alerts.news_volume > 5 AND ((max_price - min_price) / min_price) > 0.02 THEN 1 ELSE 0 END
-                    FROM crypto_timeline WHERE time_window = excluded.time_window AND coin_id = excluded.coin_id
-                );
-        """;
-
         try (PreparedStatement stmt = conn.prepareStatement(sqlTimeline)) {
             stmt.setString(1, timeWindow);
             stmt.setString(2, coinId);
@@ -71,11 +62,7 @@ public class DatamartUpdater implements EventProcessor {
             stmt.executeUpdate();
         }
 
-        try (PreparedStatement stmt = conn.prepareStatement(sqlAlerts)) {
-            stmt.setString(1, timeWindow);
-            stmt.setString(2, coinId);
-            stmt.executeUpdate();
-        }
+        updateMarketSignal(conn, timeWindow, coinId);
     }
 
     private void processNewsEvent(Connection conn, JsonObject event, String timeWindow) throws Exception {
@@ -83,7 +70,11 @@ public class DatamartUpdater implements EventProcessor {
         double score = event.get("sentimentScore").getAsDouble();
         String semanticLabel = getSemanticLabel(score);
 
-        String sqlNews = "INSERT INTO news_feed (published_at, title, url, sentiment_label) VALUES (?, ?, ?, ?)";
+        String sqlNews = """
+            INSERT INTO news_feed (published_at, title, url, sentiment_label)
+            VALUES (?, ?, ?, ?)
+        """;
+
         try (PreparedStatement stmt = conn.prepareStatement(sqlNews)) {
             stmt.setString(1, event.get("ts").getAsString());
             stmt.setString(2, title);
@@ -92,19 +83,135 @@ public class DatamartUpdater implements EventProcessor {
             stmt.executeUpdate();
         }
 
-        String sqlHype = """
-            INSERT INTO market_hype_alerts (time_window, coin_id, news_volume, average_sentiment_score)
-            VALUES (?, 'ethereum', 1, ?)
+        String sqlGlobalContext = """
+            INSERT INTO market_hype_alerts (time_window, coin_id, news_volume, average_sentiment_score, is_high_volatility, hype_warning)
+            VALUES (?, ?, 1, ?, 0, 0)
             ON CONFLICT(time_window, coin_id) DO UPDATE SET
                 news_volume = news_volume + 1,
-                average_sentiment_score = ((average_sentiment_score * news_volume) + excluded.average_sentiment_score) / (news_volume + 1),
-                hype_warning = (CASE WHEN (news_volume + 1) > 5 AND is_high_volatility = 1 THEN 1 ELSE 0 END);
+                average_sentiment_score = ((average_sentiment_score * news_volume) + excluded.average_sentiment_score) / (news_volume + 1);
         """;
-        try (PreparedStatement stmt = conn.prepareStatement(sqlHype)) {
+
+        try (PreparedStatement stmt = conn.prepareStatement(sqlGlobalContext)) {
             stmt.setString(1, timeWindow);
-            stmt.setDouble(2, score);
+            stmt.setString(2, GLOBAL_CONTEXT_ID);
+            stmt.setDouble(3, score);
             stmt.executeUpdate();
         }
+
+        updateMarketSignalsForWindow(conn, timeWindow);
+    }
+
+    private void updateMarketSignalsForWindow(Connection conn, String timeWindow) throws Exception {
+        String sqlCoins = """
+            SELECT coin_id
+            FROM crypto_timeline
+            WHERE time_window = ?
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sqlCoins)) {
+            stmt.setString(1, timeWindow);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String coinId = rs.getString("coin_id");
+                    updateMarketSignal(conn, timeWindow, coinId);
+                }
+            }
+        }
+    }
+
+    private void updateMarketSignal(Connection conn, String timeWindow, String coinId) throws Exception {
+        MarketMetrics metrics = loadMetrics(conn, timeWindow, coinId);
+        String signal = calculateSignal(metrics);
+
+        String sqlSignal = """
+            INSERT INTO market_signal (time_window, coin_id, volatility_ratio, signal, hype_warning)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(time_window, coin_id) DO UPDATE SET
+                volatility_ratio = excluded.volatility_ratio,
+                signal = excluded.signal,
+                hype_warning = excluded.hype_warning;
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sqlSignal)) {
+            stmt.setString(1, timeWindow);
+            stmt.setString(2, coinId);
+            stmt.setDouble(3, metrics.volatilityRatio());
+            stmt.setString(4, signal);
+            stmt.setBoolean(5, metrics.hypeWarning());
+            stmt.executeUpdate();
+        }
+    }
+
+    private MarketMetrics loadMetrics(Connection conn, String timeWindow, String coinId) throws Exception {
+        double minPrice = 0.0;
+        double maxPrice = 0.0;
+        int newsVolume = 0;
+        double averageSentimentScore = 0.0;
+
+        String sqlTimeline = """
+            SELECT min_price, max_price
+            FROM crypto_timeline
+            WHERE time_window = ? AND coin_id = ?
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sqlTimeline)) {
+            stmt.setString(1, timeWindow);
+            stmt.setString(2, coinId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    minPrice = rs.getDouble("min_price");
+                    maxPrice = rs.getDouble("max_price");
+                }
+            }
+        }
+
+        String sqlGlobalContext = """
+            SELECT news_volume, average_sentiment_score
+            FROM market_hype_alerts
+            WHERE time_window = ? AND coin_id = ?
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sqlGlobalContext)) {
+            stmt.setString(1, timeWindow);
+            stmt.setString(2, GLOBAL_CONTEXT_ID);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    newsVolume = rs.getInt("news_volume");
+                    averageSentimentScore = rs.getDouble("average_sentiment_score");
+                }
+            }
+        }
+
+        double volatilityRatio = 0.0;
+        if (minPrice > 0.0) {
+            volatilityRatio = (maxPrice - minPrice) / minPrice;
+        }
+
+        boolean highVolatility = volatilityRatio > HIGH_VOLATILITY_THRESHOLD;
+        boolean hypeWarning = newsVolume > HYPE_NEWS_THRESHOLD && highVolatility;
+
+        return new MarketMetrics(volatilityRatio, newsVolume, averageSentimentScore, hypeWarning);
+    }
+
+    private String calculateSignal(MarketMetrics metrics) {
+        boolean highVolatility = metrics.volatilityRatio() > HIGH_VOLATILITY_THRESHOLD;
+        boolean lowOrMediumVolatility = metrics.volatilityRatio() <= HIGH_VOLATILITY_THRESHOLD;
+        boolean positiveSentiment = metrics.averageSentimentScore() > 0.1;
+        boolean negativeSentiment = metrics.averageSentimentScore() < -0.1;
+        boolean manyNews = metrics.newsVolume() > HYPE_NEWS_THRESHOLD;
+
+        if (highVolatility || negativeSentiment || (manyNews && highVolatility)) {
+            return "Riesgoso";
+        }
+
+        if (lowOrMediumVolatility && positiveSentiment && !metrics.hypeWarning()) {
+            return "Favorable";
+        }
+
+        return "Neutral";
     }
 
     private String getSemanticLabel(double score) {
@@ -113,5 +220,13 @@ public class DatamartUpdater implements EventProcessor {
         if (score < -0.6) return "MUY NEGATIVO";
         if (score < -0.1) return "NEGATIVO";
         return "NEUTRAL";
+    }
+
+    private record MarketMetrics(
+            double volatilityRatio,
+            int newsVolume,
+            double averageSentimentScore,
+            boolean hypeWarning
+    ) {
     }
 }
