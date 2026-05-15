@@ -1,6 +1,5 @@
-package es.ulpgc.datos.feeder;
+package es.ulpgc.datos.domain;
 
-import es.ulpgc.datos.model.NewsArticle;
 import java.util.List;
 
 public interface NewsFeeder {

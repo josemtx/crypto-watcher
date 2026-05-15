@@ -1,4 +1,4 @@
-package es.ulpgc.datos.analyzer;
+package es.ulpgc.datos.domain;
 
 public interface SentimentAnalyzer {
     SentimentResult analyze(String text);

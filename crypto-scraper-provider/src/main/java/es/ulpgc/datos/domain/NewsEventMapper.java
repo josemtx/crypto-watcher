@@ -1,8 +1,6 @@
-package es.ulpgc.datos.mapper;
+package es.ulpgc.datos.domain;
 
-import es.ulpgc.datos.analyzer.SentimentAnalyzer.SentimentResult;
-import es.ulpgc.datos.event.CryptoNewsEvent;
-import es.ulpgc.datos.model.NewsArticle;
+import es.ulpgc.datos.domain.SentimentAnalyzer.SentimentResult;
 
 public class NewsEventMapper {
 

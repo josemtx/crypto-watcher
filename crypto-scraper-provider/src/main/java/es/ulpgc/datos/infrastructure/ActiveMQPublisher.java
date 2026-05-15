@@ -1,8 +1,8 @@
 // Archivo: ActiveMQPublisher.java
-package es.ulpgc.datos.publisher;
+package es.ulpgc.datos.infrastructure;
 
 import com.google.gson.Gson;
-import es.ulpgc.datos.event.CryptoNewsEvent;
+import es.ulpgc.datos.domain.CryptoNewsEvent;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import javax.jms.Connection;

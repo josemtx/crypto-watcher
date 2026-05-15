@@ -1,4 +1,4 @@
-package es.ulpgc.datos.main;
+package es.ulpgc.datos;
 
 import es.ulpgc.datos.store.EventStoreWriter;
 import es.ulpgc.datos.subscriber.EventStoreSubscriber;

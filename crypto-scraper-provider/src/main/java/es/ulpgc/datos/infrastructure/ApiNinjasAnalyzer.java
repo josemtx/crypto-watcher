@@ -1,7 +1,8 @@
-package es.ulpgc.datos.analyzer;
+package es.ulpgc.datos.infrastructure;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import es.ulpgc.datos.domain.SentimentAnalyzer;
 
 import java.net.URI;
 import java.net.URLEncoder;

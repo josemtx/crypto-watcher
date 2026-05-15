@@ -1,13 +1,13 @@
 package es.ulpgc.datos;
 
-import es.ulpgc.datos.analyzer.ApiNinjasAnalyzer;
-import es.ulpgc.datos.analyzer.SentimentAnalyzer;
-import es.ulpgc.datos.controller.ScraperController;
-import es.ulpgc.datos.feeder.CoinDeskFeeder;
-import es.ulpgc.datos.feeder.NewsFeeder;
-import es.ulpgc.datos.mapper.NewsEventMapper;
-import es.ulpgc.datos.publisher.ActiveMQPublisher;
-import es.ulpgc.datos.util.ArticleSanitizer;
+import es.ulpgc.datos.infrastructure.ApiNinjasAnalyzer;
+import es.ulpgc.datos.domain.SentimentAnalyzer;
+import es.ulpgc.datos.application.ScraperController;
+import es.ulpgc.datos.infrastructure.CoinDeskFeeder;
+import es.ulpgc.datos.domain.NewsFeeder;
+import es.ulpgc.datos.domain.NewsEventMapper;
+import es.ulpgc.datos.infrastructure.ActiveMQPublisher;
+import es.ulpgc.datos.domain.ArticleSanitizer;
 
 public class Main {
     private static final String API_KEY_ENV_VAR = "API_NINJAS_KEY";

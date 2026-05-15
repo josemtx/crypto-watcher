@@ -1,4 +1,4 @@
-package es.ulpgc.datos.event;
+package es.ulpgc.datos.domain;
 
 public record CryptoNewsEvent(
         String ts,

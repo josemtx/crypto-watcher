@@ -1,13 +1,13 @@
-package es.ulpgc.datos.controller;
+package es.ulpgc.datos.application;
 
-import es.ulpgc.datos.analyzer.SentimentAnalyzer;
-import es.ulpgc.datos.analyzer.SentimentAnalyzer.SentimentResult;
-import es.ulpgc.datos.event.CryptoNewsEvent;
-import es.ulpgc.datos.feeder.NewsFeeder;
-import es.ulpgc.datos.mapper.NewsEventMapper;
-import es.ulpgc.datos.model.NewsArticle;
-import es.ulpgc.datos.publisher.ActiveMQPublisher;
-import es.ulpgc.datos.util.ArticleSanitizer;
+import es.ulpgc.datos.domain.SentimentAnalyzer;
+import es.ulpgc.datos.domain.SentimentAnalyzer.SentimentResult;
+import es.ulpgc.datos.domain.CryptoNewsEvent;
+import es.ulpgc.datos.domain.NewsFeeder;
+import es.ulpgc.datos.domain.NewsEventMapper;
+import es.ulpgc.datos.domain.NewsArticle;
+import es.ulpgc.datos.infrastructure.ActiveMQPublisher;
+import es.ulpgc.datos.domain.ArticleSanitizer;
 
 import java.time.LocalDateTime;
 import java.util.List;

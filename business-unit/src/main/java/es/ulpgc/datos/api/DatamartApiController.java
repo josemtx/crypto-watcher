@@ -96,6 +96,9 @@ public class DatamartApiController {
         Map<String, Object> latestSignal = getLatestSignal(coin);
         Map<String, Object> latestGlobalContext = getLatestGlobalContext();
 
+        // 1. Llamada al nuevo método para extraer los datos de CoinGecko
+        Map<String, Object> latestTimelineStats = getLatestTimelineStats(coin);
+
         summary.put("coinId", coin);
         summary.put("signal", latestSignal.getOrDefault("signal", "Neutral"));
         summary.put("volatilityRatio", latestSignal.getOrDefault("volatility_ratio", 0.0));
@@ -105,8 +108,14 @@ public class DatamartApiController {
         summary.put("averageSentimentScore", latestGlobalContext.getOrDefault("average_sentiment_score", 0.0));
         summary.put("sentimentLabel", toSentimentLabel(asDouble(latestGlobalContext.get("average_sentiment_score"))));
 
+        // 2. Inyección de Volumen y Capitalización al JSON final
+        summary.put("volume_24h", latestTimelineStats.getOrDefault("volume_24h", 0.0));
+        summary.put("market_cap", latestTimelineStats.getOrDefault("market_cap", 0.0));
+
         ctx.result(gson.toJson(summary)).contentType("application/json");
     }
+
+    // --- MÉTODOS AUXILIARES ---
 
     private Map<String, Object> getLatestSignal(String coin) {
         String sql = """
@@ -129,6 +138,19 @@ public class DatamartApiController {
                 LIMIT 1
                 """;
         List<Map<String, Object>> result = executeQuery(sql, GLOBAL_CONTEXT_ID);
+        return result.isEmpty() ? new HashMap<>() : result.get(0);
+    }
+
+    // 3. NUEVO MÉTODO: Extrae los campos recién añadidos de SQLite
+    private Map<String, Object> getLatestTimelineStats(String coin) {
+        String sql = """
+                SELECT volume_24h, market_cap
+                FROM crypto_timeline
+                WHERE coin_id = ?
+                ORDER BY time_window DESC
+                LIMIT 1
+                """;
+        List<Map<String, Object>> result = executeQuery(sql, coin);
         return result.isEmpty() ? new HashMap<>() : result.get(0);
     }
 

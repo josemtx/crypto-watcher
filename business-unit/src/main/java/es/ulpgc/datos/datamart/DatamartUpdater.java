@@ -23,13 +23,12 @@ public class DatamartUpdater implements EventProcessor {
     @Override
     public void processEvent(String json) {
         try {
-            System.out.println("\n[Business-Unit] Guardando en SQLite -> " + json);
             JsonObject event = JsonParser.parseString(json).getAsJsonObject();
             String ts = event.get("ts").getAsString();
             String timeWindow = ts.substring(0, 13) + ":00";
 
             try (Connection conn = DriverManager.getConnection(dbUrl)) {
-                if (event.has("price")) {
+                if (event.has("priceUsd") || event.has("price")) {
                     processPriceEvent(conn, event, timeWindow);
                 } else if (event.has("sentimentLabel")) {
                     processNewsEvent(conn, event, timeWindow);
@@ -42,15 +41,33 @@ public class DatamartUpdater implements EventProcessor {
 
     private void processPriceEvent(Connection conn, JsonObject event, String timeWindow) throws Exception {
         String coinId = event.get("coinId").getAsString();
-        double price = event.get("price").getAsDouble();
+        double price = event.has("priceUsd") ? event.get("priceUsd").getAsDouble() : event.get("price").getAsDouble();
+        double volume = event.has("volume24h") ? event.get("volume24h").getAsDouble() : 0.0;
+        double marketCap = event.has("marketCap") ? event.get("marketCap").getAsDouble() : 0.0;
 
         String sqlTimeline = """
-            INSERT INTO crypto_timeline (time_window, coin_id, close_price, min_price, max_price)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO crypto_timeline (time_window, coin_id, close_price, min_price, max_price, volume_24h, market_cap)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(time_window, coin_id) DO UPDATE SET
                 close_price = excluded.close_price,
                 min_price = MIN(crypto_timeline.min_price, excluded.min_price),
-                max_price = MAX(crypto_timeline.max_price, excluded.max_price);
+                max_price = MAX(crypto_timeline.max_price, excluded.max_price),
+                volume_24h = excluded.volume_24h,
+                market_cap = excluded.market_cap;
+        """;
+
+        String sqlAlerts = """
+            INSERT INTO market_hype_alerts (time_window, coin_id, is_high_volatility, hype_warning)
+            VALUES (?, ?, 0, 0)
+            ON CONFLICT(time_window, coin_id) DO UPDATE SET
+                is_high_volatility = (
+                    SELECT CASE WHEN ((max_price - min_price) / min_price) > 0.02 THEN 1 ELSE 0 END
+                    FROM crypto_timeline WHERE time_window = excluded.time_window AND coin_id = excluded.coin_id
+                ),
+                hype_warning = (
+                    SELECT CASE WHEN market_hype_alerts.news_volume > 5 AND ((max_price - min_price) / min_price) > 0.02 THEN 1 ELSE 0 END
+                    FROM crypto_timeline WHERE time_window = excluded.time_window AND coin_id = excluded.coin_id
+                );
         """;
 
         try (PreparedStatement stmt = conn.prepareStatement(sqlTimeline)) {
@@ -59,9 +76,18 @@ public class DatamartUpdater implements EventProcessor {
             stmt.setDouble(3, price);
             stmt.setDouble(4, price);
             stmt.setDouble(5, price);
+            stmt.setDouble(6, volume);
+            stmt.setDouble(7, marketCap);
             stmt.executeUpdate();
         }
 
+        try (PreparedStatement stmt = conn.prepareStatement(sqlAlerts)) {
+            stmt.setString(1, timeWindow);
+            stmt.setString(2, coinId);
+            stmt.executeUpdate();
+        }
+
+        // CORRECCIÓN: Actualizar la señal también cuando entra un precio, no solo con noticias.
         updateMarketSignal(conn, timeWindow, coinId);
     }
 
@@ -103,7 +129,7 @@ public class DatamartUpdater implements EventProcessor {
 
     private void updateMarketSignalsForWindow(Connection conn, String timeWindow) throws Exception {
         String sqlCoins = """
-            SELECT coin_id
+            SELECT DISTINCT coin_id
             FROM crypto_timeline
             WHERE time_window = ?
         """;

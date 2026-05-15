@@ -1,6 +1,5 @@
-package es.ulpgc.datos.util;
+package es.ulpgc.datos.domain;
 
-import es.ulpgc.datos.model.NewsArticle;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
