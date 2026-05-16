@@ -14,7 +14,32 @@
         <module>event-store-builder</module>
         <module>business-unit</module>
     </modules>
-
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>plantuml-generator-maven-plugin</artifactId>
+                <groupId>de.elnarion.maven</groupId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>generate-class-diagram</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>generate-test-sources</phase>
+                        <configuration>
+                            <outputFilename>diagrama-clases.puml</outputFilename>
+                            <outputDirectory>${project.basedir}/diagrams</outputDirectory>
+                            <scanPackages>
+                                <scanPackage>es.ulpgc.datos</scanPackage>
+                            </scanPackages>
+                            <hideMethods>true</hideMethods>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>

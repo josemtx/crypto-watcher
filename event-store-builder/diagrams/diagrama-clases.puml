@@ -1,0 +1,40 @@
+@startuml
+
+class es.ulpgc.datos.Main {
+	{method}  {static} +main ( paramString;1 : [Ljava.lang.String; ) : void
+}
+
+
+class es.ulpgc.datos.config.ActiveMqConfig {
+	{field} {static} +BROKER_URL : String
+	{field} {static} +CLIENT_ID : String
+	{field} {static} +DURABLE_SUBSCRIPTION_NAME : String
+	{field} {static} +TOPICS : [Ljava.lang.String;
+}
+
+
+class es.ulpgc.datos.store.EventStoreWriter {
+	{field} {static} -BASE_DIRECTORY : String
+	{field} {static} -FILE_DATE_FORMAT : java.time.format.DateTimeFormatter
+	{field} -objectMapper : com.fasterxml.jackson.databind.ObjectMapper
+	{method} +append ( paramString1 : String , paramString2 : String ) : void
+	{method} -buildFileName ( paramString1 : String ) : String
+}
+
+
+class es.ulpgc.datos.subscriber.EventStoreSubscriber {
+	{field} -connection : javax.jms.Connection
+	{field} -consumers : java.util.List
+	{field} -session : javax.jms.Session
+	{method} +close () : void
+	{method} +start () : void
+}
+
+
+
+
+es.ulpgc.datos.subscriber.EventStoreSubscriber *--  es.ulpgc.datos.store.EventStoreWriter : writer
+
+hide methods
+
+@enduml

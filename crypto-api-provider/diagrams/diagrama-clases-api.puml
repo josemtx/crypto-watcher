@@ -1,0 +1,139 @@
+@startuml
+
+class es.ulpgc.datos.application.CryptoController {
+	{field} -capturePeriod : long
+	{field} -captureTimeUnit : java.util.concurrent.TimeUnit
+	{field} -scheduler : java.util.concurrent.ScheduledExecutorService
+	{method} +runOnce () : void
+	{method} +startPeriodicCapture () : void
+	{method} +stop () : void
+}
+
+
+interface es.ulpgc.datos.application.CryptoFeeder {
+	{method}  {abstract} +fetchPrices () : java.util.List
+}
+
+
+interface es.ulpgc.datos.application.CryptoPriceStore {
+	{method}  {abstract} +save ( paramList1 : java.util.List ) : void
+}
+
+
+interface es.ulpgc.datos.domain.CryptoFeeder {
+	{method}  {abstract} +fetchPrices () : java.util.List
+}
+
+
+class es.ulpgc.datos.domain.CryptoPrice {
+	{field} -capturedAt : java.time.Instant
+	{field} -coinId : String
+	{field} -marketCap : Double
+	{field} -name : String
+	{field} -price : double
+	{field} -symbol : String
+	{field} -volume24h : Double
+	{field} -vsCurrency : String
+	{method} +capturedAt () : java.time.Instant
+	{method} +coinId () : String
+	{method} +equals ( paramObject1 : Object ) : boolean
+	{method} +hashCode () : int
+	{method} +marketCap () : Double
+	{method} +name () : String
+	{method} +price () : double
+	{method} +symbol () : String
+	{method} +toString () : String
+	{method} +volume24h () : Double
+	{method} +vsCurrency () : String
+}
+
+
+class es.ulpgc.datos.domain.CryptoPriceEvent {
+	{field} -coinId : String
+	{field} -marketCap : Double
+	{field} -name : String
+	{field} -price : double
+	{field} -ss : String
+	{field} -symbol : String
+	{field} -ts : String
+	{field} -volume24h : Double
+	{field} -vsCurrency : String
+	{method} +coinId () : String
+	{method} +equals ( paramObject1 : Object ) : boolean
+	{method} +hashCode () : int
+	{method} +marketCap () : Double
+	{method} +name () : String
+	{method} +price () : double
+	{method} +ss () : String
+	{method} +symbol () : String
+	{method} +toString () : String
+	{method} +ts () : String
+	{method} +volume24h () : Double
+	{method} +vsCurrency () : String
+}
+
+
+class es.ulpgc.datos.domain.CryptoPriceEventMapper {
+	{field} -sourceId : String
+	{method} +toEvent ( paramCryptoPrice1 : es.ulpgc.datos.domain.CryptoPrice ) : es.ulpgc.datos.domain.CryptoPriceEvent
+}
+
+
+class es.ulpgc.datos.domain.CryptoPriceMapper {
+	{field} -objectMapper : com.fasterxml.jackson.databind.ObjectMapper
+	{field} -vsCurrency : String
+	{method} +fromJson ( paramString1 : String , paramInstant2 : java.time.Instant ) : java.util.List
+	{method} -getNullableDouble ( paramJsonNode1 : com.fasterxml.jackson.databind.JsonNode , paramString2 : String ) : Double
+}
+
+
+class es.ulpgc.datos.infrastructure.ActiveMqEventPublisher {
+	{field} -connection : javax.jms.Connection
+	{field} -objectMapper : com.fasterxml.jackson.databind.ObjectMapper
+	{field} -producer : javax.jms.MessageProducer
+	{field} -session : javax.jms.Session
+	{method} +close () : void
+	{method} +publish ( paramCryptoPriceEvent1 : es.ulpgc.datos.domain.CryptoPriceEvent ) : void
+}
+
+
+class es.ulpgc.datos.infrastructure.CoinGeckoFeeder {
+	{field} {static} -BASE_URL : String
+	{field} {static} -DEFAULT_COIN_IDS : String
+	{field} {static} -DEFAULT_VS_CURRENCY : String
+	{field} -coinIds : String
+	{field} -httpClient : java.net.http.HttpClient
+	{field} -vsCurrency : String
+	{method} -buildApiUrl () : String
+	{method} -buildRequest () : java.net.http.HttpRequest
+	{method} -encode ( paramString1 : String ) : String
+	{method} +fetchPrices () : java.util.List
+	{method} -normalizeCoinIds ( paramString1 : String ) : String
+	{method} -normalizeVsCurrency ( paramString1 : String ) : String
+}
+
+
+class es.ulpgc.datos.infrastructure.DatabaseCryptoPriceStore {
+	{field} {static} -DEFAULT_DB_URL : String
+	{field} -dbUrl : String
+	{method} -connect () : java.sql.Connection
+	{method} -createTableIfNotExists () : void
+	{method} -normalizeDbUrl ( paramString1 : String ) : String
+	{method} +save ( paramList1 : java.util.List ) : void
+	{method} -setNullableDouble ( paramPreparedStatement1 : java.sql.PreparedStatement , paramint2 : int , paramDouble3 : Double ) : void
+}
+
+
+
+
+es.ulpgc.datos.application.CryptoController *--  es.ulpgc.datos.application.CryptoFeeder : feeder
+es.ulpgc.datos.application.CryptoController *--  es.ulpgc.datos.application.CryptoPriceStore : store
+es.ulpgc.datos.application.CryptoController *--  es.ulpgc.datos.domain.CryptoPriceEventMapper : eventMapper
+es.ulpgc.datos.application.CryptoController *--  es.ulpgc.datos.infrastructure.ActiveMqEventPublisher : publisher
+es.ulpgc.datos.infrastructure.CoinGeckoFeeder *--  es.ulpgc.datos.domain.CryptoPriceMapper : mapper
+es.ulpgc.datos.infrastructure.CoinGeckoFeeder ..|>  es.ulpgc.datos.application.CryptoFeeder
+es.ulpgc.datos.infrastructure.DatabaseCryptoPriceStore ..|>  es.ulpgc.datos.application.CryptoPriceStore
+
+hide methods
+
+@enduml

@@ -1,0 +1,46 @@
+@startuml
+' Se han eliminado los skinparams oscuros para usar el tema claro por defecto.
+
+' Capa de Ingesta
+package "Capa de Ingesta (Providers)" {
+    [crypto-api-provider] as API
+    [crypto-scraper-provider] as Scraper
+}
+
+' Message Broker con acento azul original
+cloud "Message Broker" {
+    queue "ActiveMQ Topics" as MQ #0A84FF
+}
+
+' Capa de Almacenamiento con acentos de color originales
+package "Capa de Almacenamiento e Inteligencia" {
+    [event-store-builder] as Store
+    [business-unit] as BU
+
+    ' Base de datos con acento verde original
+    database "Datamart (SQLite)" as DB #30D158
+
+    ' Archivos en un paquete separado
+    package "Archivos .events" {
+        [Archivos .events] as Files
+    }
+}
+
+' Capa de Presentación con acento amarillo original
+node "Capa de Presentación" {
+    [Dashboard Web (HTML5/JS)] as UI #FFD60A
+}
+
+' Flujos de datos en tiempo real con flechas oscuras por defecto
+API --> MQ : 1. Publica Precios (JSON)
+Scraper --> MQ : 1. Publica Noticias + Sentimiento (JSON)
+
+MQ --> Store : 2. Suscripción asíncrona
+Store --> Files : 3. Persistencia Inmutable (Histórico)
+
+MQ --> BU : 2. Suscripción en tiempo real
+BU --> DB : 4. Computa Indicadores y Guarda Estado
+
+' Flujos de consulta de la interfaz
+UI <--> BU : 5. Peticiones REST (Javalin /api/*)
+@enduml

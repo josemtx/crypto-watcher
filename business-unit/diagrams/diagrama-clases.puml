@@ -1,0 +1,84 @@
+@startuml
+
+class es.ulpgc.datos.Main {
+	{field} {static} -DEFAULT_API_PORT : int
+	{field} {static} -SUBSCRIBER_ID : String
+	{method}  {static} +main ( paramString;1 : [Ljava.lang.String; ) : void
+}
+
+
+class es.ulpgc.datos.api.DatamartApiController {
+	{field} {static} -GLOBAL_CONTEXT_ID : String
+	{field} {static} -HIGH_VOLATILITY_THRESHOLD : double
+	{field} {static} -LOW_VOLATILITY_THRESHOLD : double
+	{field} -app : io.javalin.Javalin
+	{field} -dbUrl : String
+	{field} -gson : com.google.gson.Gson
+	{method} -asDouble ( paramObject1 : Object ) : double
+	{method} -executeQuery ( paramString1 : String , paramObject;2 : [Ljava.lang.Object; ) : java.util.List
+	{method} -getCoins ( paramContext1 : io.javalin.http.Context ) : void
+	{method} -getContext ( paramContext1 : io.javalin.http.Context ) : void
+	{method} -getLatestGlobalContext () : java.util.Map
+	{method} -getLatestSignal ( paramString1 : String ) : java.util.Map
+	{method} -getLatestTimelineStats ( paramString1 : String ) : java.util.Map
+	{method} -getNews ( paramContext1 : io.javalin.http.Context ) : void
+	{method} -getSummary ( paramContext1 : io.javalin.http.Context ) : void
+	{method} -getTimeline ( paramContext1 : io.javalin.http.Context ) : void
+	{method} -setupRoutes () : void
+	{method} +start ( paramint1 : int ) : void
+	{method} +stop () : void
+	{method} -toSentimentLabel ( paramdouble1 : double ) : String
+	{method} -toVolatilityLevel ( paramdouble1 : double ) : String
+}
+
+
+class es.ulpgc.datos.datamart.DatamartInitializer {
+	{field} -dbUrl : String
+	{method} +initialize () : void
+}
+
+
+class es.ulpgc.datos.datamart.DatamartUpdater {
+	{field} {static} -GLOBAL_CONTEXT_ID : String
+	{field} {static} -HIGH_VOLATILITY_THRESHOLD : double
+	{field} {static} -HYPE_NEWS_THRESHOLD : int
+	{field} -dbUrl : String
+	{method} -calculateSignal ( paramDatamartUpdater$MarketMetrics1 : es.ulpgc.datos.datamart.DatamartUpdater$MarketMetrics ) : String
+	{method} -getSemanticLabel ( paramdouble1 : double ) : String
+	{method} -loadMetrics ( paramConnection1 : java.sql.Connection , paramString2 : String , paramString3 : String ) : es.ulpgc.datos.datamart.DatamartUpdater$MarketMetrics
+	{method} +processEvent ( paramString1 : String ) : void
+	{method} -processNewsEvent ( paramConnection1 : java.sql.Connection , paramJsonObject2 : com.google.gson.JsonObject , paramString3 : String ) : void
+	{method} -processPriceEvent ( paramConnection1 : java.sql.Connection , paramJsonObject2 : com.google.gson.JsonObject , paramString3 : String ) : void
+	{method} -updateMarketSignal ( paramConnection1 : java.sql.Connection , paramString2 : String , paramString3 : String ) : void
+	{method} -updateMarketSignalsForWindow ( paramConnection1 : java.sql.Connection , paramString2 : String ) : void
+}
+
+
+class es.ulpgc.datos.datamart.EventStoreReader {
+	{field} -baseEventStoreDir : String
+	{method} +restoreDatamart ( paramEventProcessor1 : es.ulpgc.datos.subscriber.EventProcessor ) : void
+}
+
+
+class es.ulpgc.datos.subscriber.ActiveMQSubscriber {
+	{field} -connection : javax.jms.Connection
+	{field} -newsConsumer : javax.jms.MessageConsumer
+	{field} -priceConsumer : javax.jms.MessageConsumer
+	{field} -session : javax.jms.Session
+	{method} +close () : void
+	{method} +startListening ( paramEventProcessor1 : es.ulpgc.datos.subscriber.EventProcessor ) : void
+}
+
+
+interface es.ulpgc.datos.subscriber.EventProcessor {
+	{method}  {abstract} +processEvent ( paramString1 : String ) : void
+}
+
+
+
+
+es.ulpgc.datos.datamart.DatamartUpdater ..|>  es.ulpgc.datos.subscriber.EventProcessor
+
+hide methods
+
+@enduml

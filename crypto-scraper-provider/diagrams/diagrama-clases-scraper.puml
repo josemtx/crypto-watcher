@@ -1,0 +1,115 @@
+@startuml
+
+class es.ulpgc.datos.application.ScraperController {
+	{field} -scheduler : java.util.concurrent.ScheduledExecutorService
+	{field} -sourceId : String
+	{method} +runOnce () : void
+	{method} +startPeriodicCapture () : void
+	{method} +stop () : void
+}
+
+
+class es.ulpgc.datos.domain.ArticleSanitizer {
+	{field} -processedUrls : java.util.Set
+	{method} +sanitize ( paramList1 : java.util.List ) : java.util.List
+}
+
+
+class es.ulpgc.datos.domain.CryptoNewsEvent {
+	{field} -sentimentLabel : String
+	{field} -sentimentScore : double
+	{field} -ss : String
+	{field} -title : String
+	{field} -ts : String
+	{field} -url : String
+	{method} +equals ( paramObject1 : Object ) : boolean
+	{method} +hashCode () : int
+	{method} +sentimentLabel () : String
+	{method} +sentimentScore () : double
+	{method} +ss () : String
+	{method} +title () : String
+	{method} +toString () : String
+	{method} +ts () : String
+	{method} +url () : String
+}
+
+
+class es.ulpgc.datos.domain.NewsArticle {
+	{field} -capturedAt : java.time.Instant
+	{field} -title : String
+	{field} -url : String
+	{method} +capturedAt () : java.time.Instant
+	{method} +equals ( paramObject1 : Object ) : boolean
+	{method} +hashCode () : int
+	{method} +title () : String
+	{method} +toString () : String
+	{method} +url () : String
+}
+
+
+class es.ulpgc.datos.domain.NewsEventMapper {
+	{method} +toEvent ( paramNewsArticle1 : es.ulpgc.datos.domain.NewsArticle , paramString2 : String , paramSentimentAnalyzer$SentimentResult3 : es.ulpgc.datos.domain.SentimentAnalyzer$SentimentResult ) : es.ulpgc.datos.domain.CryptoNewsEvent
+}
+
+
+interface es.ulpgc.datos.domain.NewsFeeder {
+	{method}  {abstract} +fetchNews () : java.util.List
+}
+
+
+interface es.ulpgc.datos.domain.SentimentAnalyzer {
+	{method}  {abstract} +analyze ( paramString1 : String ) : es.ulpgc.datos.domain.SentimentAnalyzer$SentimentResult
+}
+
+
+class es.ulpgc.datos.domain.SentimentAnalyzer$SentimentResult {
+	{field} -label : String
+	{field} -score : double
+	{method} +equals ( paramObject1 : Object ) : boolean
+	{method} +hashCode () : int
+	{method} +label () : String
+	{method} +score () : double
+	{method} +toString () : String
+}
+
+
+class es.ulpgc.datos.infrastructure.ActiveMQPublisher {
+	{field} -connection : javax.jms.Connection
+	{field} -gson : com.google.gson.Gson
+	{field} -producer : javax.jms.MessageProducer
+	{field} -session : javax.jms.Session
+	{method} +close () : void
+	{method} +publish ( paramCryptoNewsEvent1 : es.ulpgc.datos.domain.CryptoNewsEvent ) : void
+}
+
+
+class es.ulpgc.datos.infrastructure.ApiNinjasAnalyzer {
+	{field} -apiKey : String
+	{field} -baseUrl : String
+	{field} -client : java.net.http.HttpClient
+	{method} +analyze ( paramString1 : String ) : es.ulpgc.datos.domain.SentimentAnalyzer$SentimentResult
+	{method} -parseResponse ( paramString1 : String ) : es.ulpgc.datos.domain.SentimentAnalyzer$SentimentResult
+}
+
+
+class es.ulpgc.datos.infrastructure.CoinDeskFeeder {
+	{field} {static} -RSS_URL : String
+	{method} -extractNews ( paramDocument1 : org.jsoup.nodes.Document ) : java.util.List
+	{method} +fetchNews () : java.util.List
+	{method} -isValidNewsLink ( paramString1 : String , paramString2 : String ) : boolean
+}
+
+
+
+
+es.ulpgc.datos.application.ScraperController *--  es.ulpgc.datos.domain.ArticleSanitizer : sanitizer
+es.ulpgc.datos.application.ScraperController *--  es.ulpgc.datos.domain.NewsEventMapper : eventMapper
+es.ulpgc.datos.application.ScraperController *--  es.ulpgc.datos.domain.NewsFeeder : feeder
+es.ulpgc.datos.application.ScraperController *--  es.ulpgc.datos.domain.SentimentAnalyzer : analyzer
+es.ulpgc.datos.application.ScraperController *--  es.ulpgc.datos.infrastructure.ActiveMQPublisher : publisher
+es.ulpgc.datos.infrastructure.ApiNinjasAnalyzer ..|>  es.ulpgc.datos.domain.SentimentAnalyzer
+es.ulpgc.datos.infrastructure.CoinDeskFeeder ..|>  es.ulpgc.datos.domain.NewsFeeder
+
+hide methods
+
+@enduml
