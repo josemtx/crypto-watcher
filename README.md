@@ -26,11 +26,11 @@ El proyecto está diseñado bajo los principios de **Clean Architecture (Puertos
 
 ### 1. Capa de Ingesta: Crypto API Provider
 Extrae cotizaciones (Precio, Volumen, Market Cap) desde la API REST de CoinGecko y las publica en el bus de mensajería.
-![Diagrama de Clases - API Provider](./crypto-api-provider/diagrams/diagrama-clases.png)
+![Diagrama de Clases - API Provider](./crypto-api-provider/diagrams/diagrama-clases-api.png)
 
 ### 2. Capa de Ingesta: Crypto Scraper Provider
 Ingiere el feed RSS oficial de CoinDesk, limpia el contenido (Sanitizer) y evalúa el sentimiento usando la API de ApiNinjas. Implementa una separación estricta entre Dominio, Aplicación e Infraestructura.
-![Diagrama de Clases - Scraper Provider](./crypto-scraper-provider/diagrams/diagrama-clases.png)
+![Diagrama de Clases - Scraper Provider](./crypto-scraper-provider/diagrams/diagrama-clases-scraper.png)
 
 ### 3. Capa de Almacenamiento: Event Store Builder
 Persiste todos los eventos crudos (`.events`) emitidos por los providers, garantizando la inmutabilidad de los datos y permitiendo la reconstrucción del estado del sistema desde cero.
