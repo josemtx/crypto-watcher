@@ -12,42 +12,54 @@ Para lograrlo, el sistema abandona el análisis de precios aislado y ejecuta un 
 
 Esta combinación permite detectar de forma automatizada **Alertas de Hype** (euforia o pánico irracional), movimientos silenciosos de "ballenas" y momentos de alta tensión operativa.
 
-## 🏗️ Arquitectura Final del Sistema
+---
 
-El proyecto está diseñado bajo los principios de **Clean Architecture (Puertos y Adaptadores)** para garantizar el desacoplamiento y alta mantenibilidad, dividiéndose en módulos independientes comunicados de forma asíncrona:
+## 🏗️ Arquitectura Global del Sistema
 
-* **1. Capa de Ingesta (Feeders & Publishers):**
-    * `crypto-api-provider`: Extrae cotizaciones (Precio, Volumen, Market Cap) desde la API REST de CoinGecko.
-    * `crypto-scraper-provider`: Ingiere el feed RSS oficial de CoinDesk, limpia el contenido y evalúa el sentimiento usando la API de ApiNinjas.
-* **2. Capa de Mensajería (Message Broker):**
-    * **ActiveMQ:** Actúa como el bus central de eventos del sistema, canalizando los JSONs a través de *Topics* específicos (`CryptoNews`, precios, etc.).
-* **3. Capa de Almacenamiento (Event Store):**
-    * `event-store-builder`: Persiste todos los eventos crudos en archivos locales `.events`, garantizando la inmutabilidad de los datos y permitiendo la reconstrucción del estado del sistema en cualquier momento.
-* **4. Capa de Negocio (Business Unit & Datamart):**
-    * **Procesador de Eventos:** Escucha los mensajes en tiempo real y reconstruye el histórico.
-    * **Datamart (SQLite):** Base de datos relacional optimizada con 4 tablas (`crypto_timeline`, `news_feed`, `market_hype_alerts`, `market_signal`) que consolida y precalcula los indicadores complejos.
-* **5. Capa de Presentación (REST API & Dashboard):**
-    * Servidor web embebido con **Javalin** que expone endpoints REST (`/api/timeline`, `/api/summary`, etc.).
-    * Frontend SPA (*Single Page Application*) construido con Vanilla JS, CSS3 (estilo *Glassmorphism* corporativo) y **Chart.js** para visualización reactiva.
+El proyecto está diseñado bajo los principios de **Clean Architecture (Puertos y Adaptadores)** para garantizar el desacoplamiento, dividiéndose en módulos independientes comunicados de forma asíncrona a través de Apache ActiveMQ.
 
-## 🚀 Cómo ejecutar cada componente y probar la interfaz
+![Arquitectura Global](./arquitectura-global.png)
 
-Para levantar la arquitectura End-to-End (E2E), se deben seguir estos pasos en orden para respetar el flujo de datos:
+---
+
+## 🧩 Componentes y Diagramas de Clases
+
+### 1. Capa de Ingesta: Crypto API Provider
+Extrae cotizaciones (Precio, Volumen, Market Cap) desde la API REST de CoinGecko y las publica en el bus de mensajería.
+![Diagrama de Clases - API Provider](./crypto-api-provider/diagrams/diagrama-clases.png)
+
+### 2. Capa de Ingesta: Crypto Scraper Provider
+Ingiere el feed RSS oficial de CoinDesk, limpia el contenido (Sanitizer) y evalúa el sentimiento usando la API de ApiNinjas. Implementa una separación estricta entre Dominio, Aplicación e Infraestructura.
+![Diagrama de Clases - Scraper Provider](./crypto-scraper-provider/diagrams/diagrama-clases.png)
+
+### 3. Capa de Almacenamiento: Event Store Builder
+Persiste todos los eventos crudos (`.events`) emitidos por los providers, garantizando la inmutabilidad de los datos y permitiendo la reconstrucción del estado del sistema desde cero.
+![Diagrama de Clases - Event Store](./event-store-builder/diagrams/diagrama-clases.png)
+
+### 4. Capa de Negocio y Presentación: Business Unit
+Escucha los mensajes en tiempo real, actualiza el Datamart (SQLite) consolidando indicadores complejos, y levanta un servidor REST con **Javalin** para alimentar el Dashboard SPA interactivo.
+![Diagrama de Clases - Business Unit](./business-unit/diagrams/diagrama-clases.png)
+
+---
+
+## 🚀 Cómo ejecutar y probar el sistema (Demo)
+
+Para levantar la arquitectura End-to-End (E2E) y visualizar el flujo en tiempo real frente a los eventos históricos, sigue estos pasos:
 
 ### Prerrequisitos
-* Java 21 o superior.
+* Java 21 o superior y Maven.
 * Apache ActiveMQ ejecutándose localmente en el puerto `61616`.
 * Variable de entorno configurada: `API_NINJAS_KEY` con tu clave de acceso.
 
-### Orden de Ejecución
+### Orden de Ejecución (Arranque en Frío)
 
-1.  **Iniciar el Broker:** Asegúrate de que Apache ActiveMQ está arrancado.
-2.  **Iniciar Event Store:** Ejecuta el `Main` del módulo `event-store-builder` para habilitar el guardado del historial.
-3.  **Iniciar los Providers (Scrapers):**
+1. **Limpiar estado (Opcional pero recomendado para demos):** Borra el archivo `datamart.db` en el módulo `business-unit` para forzar la reconstrucción histórica.
+2. **Iniciar el Broker:** Asegúrate de que Apache ActiveMQ está arrancado.
+3. **Iniciar Event Store:** Ejecuta el `Main` del módulo `event-store-builder` para habilitar el guardado y lectura del historial.
+4. **Iniciar la Business Unit:** Ejecuta el `Main` de `business-unit`. Verás en consola cómo lee instantáneamente los archivos `.events` históricos y reconstruye la base de datos completa.
+5. **Iniciar el flujo en Tiempo Real (Providers):**
     * Ejecuta el `Main` de `crypto-api-provider`.
     * Ejecuta el `Main` de `crypto-scraper-provider`.
-4.  **Iniciar la Business Unit:**
-    * Ejecuta el `Main` del módulo principal de negocio. Este proceso creará/leerá la base de datos `datamart.db`, procesará todos los eventos y levantará automáticamente el servidor web de Javalin.
-5.  **Probar la Interfaz:**
+6. **Interactuar con la Interfaz:**
     * Abre tu navegador web y navega a: [http://localhost:8080](http://localhost:8080)
-    * Selecciona la criptomoneda en el menú desplegable superior derecho para visualizar la telemetría cruzada y el termómetro de mercado en vivo.
+    * Observa cómo se dibujan las gráficas con el histórico y cómo se actualizan dinámicamente los paneles de liquidez, el termómetro de sentimiento y la señal de mercado cada vez que los scrapers publican nueva información.
