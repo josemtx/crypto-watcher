@@ -2,7 +2,7 @@
 
 Plataforma de inteligencia de mercado basada en una **Arquitectura Orientada a Eventos (Kappa)**. El sistema ingiere, procesa y cruza datos de cotizaciones de criptomonedas y análisis de sentimiento de noticias financieras para ofrecer señales de inversión en tiempo real.
 
-## 🎯 Objetivo de la Funcionalidad de Negocio
+## Objetivo de la Funcionalidad de Negocio
 
 El objetivo principal de esta plataforma es resolver la asimetría de información en el mercado de criptomonedas proporcionando al usuario una **Señal de Mercado accionable (Favorable, Neutral o Riesgoso)**. 
 
@@ -14,7 +14,7 @@ Esta combinación permite detectar de forma automatizada **Alertas de Hype** (eu
 
 ---
 
-## 🏗️ Arquitectura Global del Sistema
+## Arquitectura Global del Sistema
 
 El proyecto está diseñado bajo los principios de **Clean Architecture (Puertos y Adaptadores)** para garantizar el desacoplamiento, dividiéndose en módulos independientes comunicados de forma asíncrona a través de Apache ActiveMQ.
 
@@ -22,7 +22,7 @@ El proyecto está diseñado bajo los principios de **Clean Architecture (Puertos
 
 ---
 
-## 🧩 Componentes y Diagramas de Clases
+## Componentes y Diagramas de Clases
 
 ### 1. Capa de Ingesta: Crypto API Provider
 Extrae cotizaciones (Precio, Volumen, Market Cap) desde la API REST de CoinGecko y las publica en el bus de mensajería.
@@ -34,15 +34,15 @@ Ingiere el feed RSS oficial de CoinDesk, limpia el contenido (Sanitizer) y eval�
 
 ### 3. Capa de Almacenamiento: Event Store Builder
 Persiste todos los eventos crudos (`.events`) emitidos por los providers, garantizando la inmutabilidad de los datos y permitiendo la reconstrucción del estado del sistema desde cero.
-![Diagrama de Clases - Event Store](./event-store-builder/diagrams/diagrama-clases.png)
+![Diagrama de Clases - Event Store](./event-store-builder/diagrams/diagrama-clases-store.png)
 
 ### 4. Capa de Negocio y Presentación: Business Unit
 Escucha los mensajes en tiempo real, actualiza el Datamart (SQLite) consolidando indicadores complejos, y levanta un servidor REST con **Javalin** para alimentar el Dashboard SPA interactivo.
-![Diagrama de Clases - Business Unit](./business-unit/diagrams/diagrama-clases.png)
+![Diagrama de Clases - Business Unit](./business-unit/diagrams/diagrama-clases-business.png)
 
 ---
 
-## 🚀 Cómo ejecutar y probar el sistema (Demo)
+## Cómo ejecutar y probar el sistema (Demo)
 
 Para levantar la arquitectura End-to-End (E2E) y visualizar el flujo en tiempo real frente a los eventos históricos, sigue estos pasos:
 
