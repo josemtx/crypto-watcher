@@ -6,10 +6,6 @@ target/
 
 ### IntelliJ IDEA ###
 .idea/
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
 *.iws
 *.iml
 *.ipr
@@ -39,15 +35,18 @@ build/
 ### Mac OS ###
 .DS_Store
 
-.idea/
-crypto_data.db
-
-eventstore/
 ### Windows ###
 Thumbs.db
 
-### SQLite ###
+### SQLite / local databases ###
 *.db
 
 ### Generated event store ###
 eventstore/
+
+### Environment files ###
+.env
+.env.*
+
+### Logs ###
+*.log
