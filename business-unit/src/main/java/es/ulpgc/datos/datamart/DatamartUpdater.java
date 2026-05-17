@@ -10,14 +10,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 public class DatamartUpdater implements EventProcessor {
-    private static final double HIGH_VOLATILITY_THRESHOLD = 0.02;
     private static final int HYPE_NEWS_THRESHOLD = 5;
     private static final String GLOBAL_CONTEXT_ID = "__global__";
 
     private final String dbUrl;
+    private final MarketSignalCalculator signalCalculator;
 
     public DatamartUpdater(String dbPath) {
         this.dbUrl = "jdbc:sqlite:" + dbPath;
+        this.signalCalculator = new MarketSignalCalculator();
     }
 
     @Override
@@ -87,7 +88,6 @@ public class DatamartUpdater implements EventProcessor {
             stmt.executeUpdate();
         }
 
-        // CORRECCIÓN: Actualizar la señal también cuando entra un precio, no solo con noticias.
         updateMarketSignal(conn, timeWindow, coinId);
     }
 
@@ -148,7 +148,12 @@ public class DatamartUpdater implements EventProcessor {
 
     private void updateMarketSignal(Connection conn, String timeWindow, String coinId) throws Exception {
         MarketMetrics metrics = loadMetrics(conn, timeWindow, coinId);
-        String signal = calculateSignal(metrics);
+        String signal = signalCalculator.calculateSignal(
+                metrics.volatilityRatio(),
+                metrics.newsVolume(),
+                metrics.averageSentimentScore(),
+                metrics.hypeWarning()
+        );
 
         String sqlSignal = """
             INSERT INTO market_signal (time_window, coin_id, volatility_ratio, signal, hype_warning)
@@ -211,33 +216,10 @@ public class DatamartUpdater implements EventProcessor {
             }
         }
 
-        double volatilityRatio = 0.0;
-        if (minPrice > 0.0) {
-            volatilityRatio = (maxPrice - minPrice) / minPrice;
-        }
-
-        boolean highVolatility = volatilityRatio > HIGH_VOLATILITY_THRESHOLD;
-        boolean hypeWarning = newsVolume > HYPE_NEWS_THRESHOLD && highVolatility;
+        double volatilityRatio = signalCalculator.calculateVolatilityRatio(minPrice, maxPrice);
+        boolean hypeWarning = signalCalculator.calculateHypeWarning(volatilityRatio, newsVolume);
 
         return new MarketMetrics(volatilityRatio, newsVolume, averageSentimentScore, hypeWarning);
-    }
-
-    private String calculateSignal(MarketMetrics metrics) {
-        boolean highVolatility = metrics.volatilityRatio() > HIGH_VOLATILITY_THRESHOLD;
-        boolean lowOrMediumVolatility = metrics.volatilityRatio() <= HIGH_VOLATILITY_THRESHOLD;
-        boolean positiveSentiment = metrics.averageSentimentScore() > 0.1;
-        boolean negativeSentiment = metrics.averageSentimentScore() < -0.1;
-        boolean manyNews = metrics.newsVolume() > HYPE_NEWS_THRESHOLD;
-
-        if (highVolatility || negativeSentiment || (manyNews && highVolatility)) {
-            return "Riesgoso";
-        }
-
-        if (lowOrMediumVolatility && positiveSentiment && !metrics.hypeWarning()) {
-            return "Favorable";
-        }
-
-        return "Neutral";
     }
 
     private String getSemanticLabel(double score) {
