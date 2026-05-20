@@ -285,7 +285,4 @@ MQ --> BU : 2. Suscripción en tiempo real
 BU --> DB : 4. Computa Indicadores y Guarda Estado
 UI <--> BU : 5. Peticiones REST (Javalin /api/*)
 @enduml
-
-```tHub para verificar visualmente que todas las imágenes renderizan de manera correcta en la página principal antes de la entrega de mañana a las 15:00.
-
 ```
