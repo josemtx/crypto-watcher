@@ -1,4 +1,3 @@
-// Archivo: ActiveMQPublisher.java
 package es.ulpgc.datos.infrastructure;
 
 import com.google.gson.Gson;
@@ -20,7 +19,6 @@ public class ActiveMQPublisher implements AutoCloseable {
     private final Session session;
     private final MessageProducer producer;
 
-    // Recibimos los parámetros de conexión directamente
     public ActiveMQPublisher(String brokerUrl, String topicName) {
         this.gson = new Gson();
 

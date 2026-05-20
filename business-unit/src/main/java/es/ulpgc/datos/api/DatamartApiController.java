@@ -96,7 +96,6 @@ public class DatamartApiController {
         Map<String, Object> latestSignal = getLatestSignal(coin);
         Map<String, Object> latestGlobalContext = getLatestGlobalContext();
 
-        // 1. Llamada al nuevo método para extraer los datos de CoinGecko
         Map<String, Object> latestTimelineStats = getLatestTimelineStats(coin);
 
         summary.put("coinId", coin);
@@ -115,7 +114,6 @@ public class DatamartApiController {
         ctx.result(gson.toJson(summary)).contentType("application/json");
     }
 
-    // --- MÉTODOS AUXILIARES ---
 
     private Map<String, Object> getLatestSignal(String coin) {
         String sql = """
@@ -141,7 +139,6 @@ public class DatamartApiController {
         return result.isEmpty() ? new HashMap<>() : result.get(0);
     }
 
-    // 3. NUEVO MÉTODO: Extrae los campos recién añadidos de SQLite
     private Map<String, Object> getLatestTimelineStats(String coin) {
         String sql = """
                 SELECT volume_24h, market_cap

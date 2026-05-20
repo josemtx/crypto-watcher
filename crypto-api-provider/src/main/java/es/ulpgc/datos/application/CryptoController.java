@@ -62,8 +62,4 @@ public class CryptoController {
         scheduler.scheduleAtFixedRate(this::runOnce, capturePeriod, capturePeriod, captureTimeUnit);
     }
 
-    public void stop() {
-        scheduler.shutdown();
-        publisher.close();
-    }
 }

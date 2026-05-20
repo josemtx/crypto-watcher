@@ -27,9 +27,6 @@ public class CoinGeckoFeeder implements CryptoFeeder {
     private final String vsCurrency;
     private final String coinIds;
 
-    public CoinGeckoFeeder() {
-        this(HttpClient.newHttpClient(), DEFAULT_VS_CURRENCY, DEFAULT_COIN_IDS);
-    }
 
     public CoinGeckoFeeder(String vsCurrency, String coinIds) {
         this(HttpClient.newHttpClient(), vsCurrency, coinIds);

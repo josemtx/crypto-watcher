@@ -20,7 +20,6 @@ public class EventStoreReader {
         this.baseEventStoreDir = baseEventStoreDir;
     }
 
-    // Un record interno para ayudar a ordenar los eventos
     private record TimedEvent(String ts, String rawJson) {}
 
     public void restoreDatamart(EventProcessor processor) {
@@ -34,13 +33,11 @@ public class EventStoreReader {
         }
 
         try (Stream<Path> paths = Files.walk(basePath)) {
-            // 1. Buscar todos los archivos .events en cualquier subcarpeta
             List<Path> eventFiles = paths
                     .filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".events"))
                     .toList();
 
-            // 2. Leer todas las líneas y extraer el timestamp para poder ordenar
             for (Path file : eventFiles) {
                 List<String> lines = Files.readAllLines(file);
                 for (String line : lines) {
@@ -55,12 +52,10 @@ public class EventStoreReader {
                 }
             }
 
-            // 3. ¡La Magia! Ordenar todos los eventos de todas las fuentes por fecha y hora exactas
             allEvents.sort(Comparator.comparing(TimedEvent::ts));
 
             System.out.println("[Business-Unit] Se han encontrado y ordenado " + allEvents.size() + " eventos históricos.");
 
-            // 4. Enviar los eventos al Datamart en orden estricto (Viaje en el tiempo)
             for (TimedEvent event : allEvents) {
                 processor.processEvent(event.rawJson());
             }

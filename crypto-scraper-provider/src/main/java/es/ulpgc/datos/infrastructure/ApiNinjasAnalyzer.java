@@ -29,17 +29,14 @@ public class ApiNinjasAnalyzer implements SentimentAnalyzer {
     @Override
     public SentimentResult analyze(String text) {
         try {
-            // 1. Limpiamos y codificamos el texto para poder enviarlo en la URL
             String encodedText = URLEncoder.encode(text, StandardCharsets.UTF_8);
 
-            // 2. Construimos la petición GET
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + encodedText))
                     .header("X-Api-Key", apiKey) // Aquí va tu llave
                     .GET()
                     .build();
 
-            // 3. Enviamos la petición
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
@@ -47,7 +44,6 @@ public class ApiNinjasAnalyzer implements SentimentAnalyzer {
                 return new SentimentResult(0.0, "NEUTRAL");
             }
 
-            // 4. Parseamos la respuesta
             return parseResponse(response.body());
 
         } catch (Exception e) {
@@ -60,11 +56,9 @@ public class ApiNinjasAnalyzer implements SentimentAnalyzer {
         try {
             JsonObject obj = JsonParser.parseString(jsonResponse).getAsJsonObject();
 
-            // Extraemos los campos directos que nos da API-Ninjas
             double score = obj.has("score") ? obj.get("score").getAsDouble() : 0.0;
             String rawSentiment = obj.has("sentiment") ? obj.get("sentiment").getAsString().toUpperCase() : "NEUTRAL";
 
-            // Normalizamos los resultados para que el Datamart del Sprint 3 quede limpio
             String finalLabel = switch (rawSentiment) {
                 case "WEAK_POSITIVE", "POSITIVE" -> "POSITIVE";
                 case "WEAK_NEGATIVE", "NEGATIVE" -> "NEGATIVE";

@@ -14,13 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CoinDeskFeeder implements NewsFeeder {
-    // Usamos el endpoint oficial de sindicación (RSS) diseñado para consumo automatizado
     private static final String RSS_URL = "https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml";
 
     @Override
     public List<NewsArticle> fetchNews() {
         try {
-            // Le indicamos a Jsoup que procese la respuesta como XML en lugar de HTML
             Document doc = Jsoup.connect(RSS_URL)
                     .parser(Parser.xmlParser())
                     .timeout(10000)
@@ -35,12 +33,10 @@ public class CoinDeskFeeder implements NewsFeeder {
 
     private List<NewsArticle> extractNews(Document doc) {
         List<NewsArticle> newsList = new ArrayList<>();
-        // En formato RSS, cada noticia viene envuelta en una etiqueta <item>
         Elements items = doc.select("item");
         Instant capturedAt = Instant.now();
 
         for (Element item : items) {
-            // Extraemos los datos directamente de las subetiquetas
             String title = item.select("title").text();
             String articleUrl = item.select("link").text();
 

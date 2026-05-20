@@ -15,7 +15,6 @@ public class DatamartInitializer {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              Statement stmt = conn.createStatement()) {
 
-            // Añadidas las columnas volume_24h y market_cap
             String createTimelineTable = """
                 CREATE TABLE IF NOT EXISTS crypto_timeline (
                     time_window TEXT,
@@ -53,7 +52,6 @@ public class DatamartInitializer {
             """;
             stmt.execute(createAlertsTable);
 
-            // NUEVA TABLA: market_signal
             String createSignalTable = """
                 CREATE TABLE IF NOT EXISTS market_signal (
                     time_window TEXT,

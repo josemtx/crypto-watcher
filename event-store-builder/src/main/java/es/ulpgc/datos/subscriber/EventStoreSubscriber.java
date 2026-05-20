@@ -28,7 +28,6 @@ public class EventStoreSubscriber implements AutoCloseable {
 
             this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-            // ¡NUEVO! Bucle para suscribirse a todos los Topics definidos en la config
             for (String topicName : ActiveMqConfig.TOPICS) {
                 Topic topic = session.createTopic(topicName);
                 MessageConsumer consumer = session.createDurableSubscriber(
@@ -44,7 +43,6 @@ public class EventStoreSubscriber implements AutoCloseable {
 
     public void start() {
         try {
-            // ¡NUEVO! Bucle para asignarle el listener a cada consumidor
             for (int i = 0; i < consumers.size(); i++) {
                 MessageConsumer consumer = consumers.get(i);
                 String topicName = ActiveMqConfig.TOPICS[i]; // Recuperamos el nombre del Topic para pasárselo al Writer
