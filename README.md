@@ -189,7 +189,7 @@ A continuación se exponen registros reales de las estructuras inmutables persis
 {"ts":"2026-04-29T18:45:00.135831200Z","ss":"crypto-api-provider","coinId":"ethereum","symbol":"eth","name":"Ethereum","priceUsd":2227.27,"marketCap":2.68997571248E11,"volume24h":1.7764855403E10}
 
 ```
-
+---
 
 ## 7. Muestras de Datos del Datamart
 
