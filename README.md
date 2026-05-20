@@ -189,10 +189,36 @@ A continuación se exponen registros reales de las estructuras inmutables persis
 {"ts":"2026-04-29T18:45:00.135831200Z","ss":"crypto-api-provider","coinId":"ethereum","symbol":"eth","name":"Ethereum","priceUsd":2227.27,"marketCap":2.68997571248E11,"volume24h":1.7764855403E10}
 
 ```
+### Muestras de Datos del Datamart (Base de Datos Relacional SQLite)
+
+## 7.A continuación se expone una instantánea del estado consolidado de las tablas del Datamart tras el procesamiento y agregación de los flujos de eventos.
+
+#### Tabla: crypto_timeline
+| time_window | coin_id | close_price | min_price | max_price | volume_24h | market_cap |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 2026-05-19 12:00 | ethereum | 2227.27 | 2225.00 | 2230.10 | 1.7764E10 | 2.6899E11 |
+| 2026-05-19 12:00 | bitcoin | 75291.00 | 75100.00 | 75450.00 | 4.1359E10 | 1.5074E12 |
+
+#### Tabla: market_signal
+| time_window | coin_id | volatility_ratio | signal | hype_warning |
+| :--- | :--- | :--- | :--- | :--- |
+| 2026-05-19 12:00 | ethereum | 0.0022 | Neutral | 0 |
+| 2026-05-19 12:00 | bitcoin | 0.0046 | Favorable | 0 |
+
+#### Tabla: market_hype_alerts
+| time_window | coin_id | news_volume | average_sentiment_score | is_high_volatility | hype_warning |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 2026-05-19 12:00 | __global__ | 50 | 0.02 | 0 | 0 |
+
+#### Tabla: news_feed
+| published_at | title | url | sentiment_label |
+| :--- | :--- | :--- | :--- |
+| 2026-04-13T17:44:25Z | Crypto exchange Kraken targeted in extortion attempt | https://www.coindesk.com/business/kraken | NEGATIVO |
+| 2026-04-13T17:44:25Z | Bitcoin moves off lowest levels as weekend fears slip | https://www.coindesk.com/markets/btc | POSITIVO |
 
 ---
 
-## 7. Interfaz REST y Ejemplos de Peticiones
+## 8. Interfaz REST y Ejemplos de Peticiones
 
 La capa de presentación de la `business-unit` expone servicios web estructurados en formato JSON bajo el puerto base `8080`.
 
@@ -251,7 +277,7 @@ La capa de presentación de la `business-unit` expone servicios web estructurado
 
 ---
 
-## 8. Apéndice: Especificaciones Técnicas PlantUML
+## 9. Apéndice: Especificaciones Técnicas PlantUML
 
 Para permitir la edición y el mantenimiento de los diagramas, se adjuntan las especificaciones textuales del sistema.
 
